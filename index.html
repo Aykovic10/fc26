@@ -1,401 +1,911 @@
-import React, { useMemo, useState } from "react";
-import { motion } from "framer-motion";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FC26 Auto Clothing Generator</title>
+  <style>
+    :root {
+      --bg: #09090b;
+      --panel: rgba(255, 255, 255, 0.04);
+      --panel-strong: #18181b;
+      --border: rgba(255, 255, 255, 0.10);
+      --text: #ffffff;
+      --muted: #a1a1aa;
+      --muted-2: #71717a;
+      --white: #ffffff;
+      --black: #09090b;
+      --green: #bbf7d0;
+      --green-bg: rgba(34, 197, 94, 0.10);
+      --green-border: rgba(34, 197, 94, 0.20);
+    }
 
-const teams = [
-  { id: 1, name: "Arsenal", teamId: "1" },
-  { id: 2, name: "Chelsea", teamId: "5" },
-  { id: 3, name: "Liverpool", teamId: "9" },
-  { id: 4, name: "Manchester City", teamId: "10" },
-  { id: 5, name: "Manchester United", teamId: "11" },
-  { id: 6, name: "Tottenham Hotspur", teamId: "18" },
-  { id: 7, name: "Real Madrid", teamId: "243" },
-  { id: 8, name: "Barcelona", teamId: "241" },
-];
+    * {
+      box-sizing: border-box;
+    }
 
-const clothingPacks = [
-  {
-    id: "anthem-black",
-    name: "Black Anthem Jacket",
-    clothingId: "122156",
-    category: "Anthem Jacket",
-    description: "Clean black prematch anthem jacket for managers and staff.",
-    badge: "Popular",
-  },
-  {
-    id: "anthem-white",
-    name: "White Anthem Jacket",
-    clothingId: "122172",
-    category: "Anthem Jacket",
-    description: "Minimal white jacket with premium sideline look.",
-    badge: "New",
-  },
-  {
-    id: "worldcup-coat",
-    name: "World Cup Manager Coat",
-    clothingId: "400070",
-    category: "Manager Clothing",
-    description: "Tournament-style winter coat for World Cup career saves.",
-    badge: "FC26",
-  },
-  {
-    id: "training-top",
-    name: "Elite Training Top",
-    clothingId: "422105",
-    category: "Training Wear",
-    description: "Modern training top designed for pre-match tunnel scenes.",
-    badge: "Beta",
-  },
-];
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.08), transparent 32%), var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
 
-function cx(...classes) {
-  return classes.filter(Boolean).join(" ");
-}
+    button,
+    input {
+      font: inherit;
+    }
 
-function Icon({ name, className = "h-5 w-5" }) {
-  const commonProps = {
-    className,
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 2,
-    strokeLinecap: "round",
-    strokeLinejoin: "round",
-    "aria-hidden": "true",
-  };
+    button {
+      cursor: pointer;
+    }
 
-  if (name === "search") {
-    return (
-      <svg {...commonProps}>
-        <circle cx="11" cy="11" r="8" />
-        <path d="m21 21-4.3-4.3" />
-      </svg>
-    );
-  }
+    .page {
+      min-height: 100vh;
+      padding: 32px 20px;
+    }
 
-  if (name === "download") {
-    return (
-      <svg {...commonProps}>
-        <path d="M12 3v12" />
-        <path d="m7 10 5 5 5-5" />
-        <path d="M5 21h14" />
-      </svg>
-    );
-  }
+    .container {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+    }
 
-  if (name === "shirt") {
-    return (
-      <svg {...commonProps}>
-        <path d="M8 4 5 5.5 3 10l4 2v8h10v-8l4-2-2-4.5L16 4" />
-        <path d="M8 4c.7 2 2 3 4 3s3.3-1 4-3" />
-      </svg>
-    );
-  }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+    }
 
-  if (name === "shield") {
-    return (
-      <svg {...commonProps}>
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
-      </svg>
-    );
-  }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
 
-  if (name === "check") {
-    return (
-      <svg {...commonProps}>
-        <circle cx="12" cy="12" r="10" />
-        <path d="m9 12 2 2 4-5" />
-      </svg>
-    );
-  }
+    .brand-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 18px;
+      background: var(--white);
+      color: var(--black);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+    }
 
-  if (name === "lock") {
-    return (
-      <svg {...commonProps}>
-        <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-      </svg>
-    );
-  }
+    .eyebrow {
+      margin: 0 0 4px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.35em;
+      color: var(--muted);
+    }
 
-  if (name === "sparkles") {
-    return (
-      <svg {...commonProps}>
-        <path d="M12 3 10.5 8.5 5 10l5.5 1.5L12 17l1.5-5.5L19 10l-5.5-1.5L12 3Z" />
-        <path d="M19 15v4" />
-        <path d="M21 17h-4" />
-        <path d="M5 3v3" />
-        <path d="M6.5 4.5h-3" />
-      </svg>
-    );
-  }
+    .brand h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+    }
 
-  return null;
-}
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.05);
+      color: #d4d4d8;
+      padding: 10px 16px;
+      border-radius: 999px;
+      font-size: 14px;
+      white-space: nowrap;
+    }
 
-export function filterTeams(teamList, query) {
-  const cleanQuery = String(query || "").trim().toLowerCase();
+    .hero {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 28px;
+      align-items: center;
+    }
 
-  if (!cleanQuery) {
-    return teamList;
-  }
+    .hero-copy {
+      animation: fadeUp 0.45s ease both;
+    }
 
-  return teamList.filter((team) => {
-    return (
-      team.name.toLowerCase().includes(cleanQuery) ||
-      String(team.teamId).includes(cleanQuery)
-    );
-  });
-}
+    .hero-copy h2 {
+      margin: 22px 0 18px;
+      max-width: 820px;
+      font-size: clamp(42px, 6vw, 72px);
+      line-height: 0.96;
+      letter-spacing: -0.07em;
+    }
 
-export function createGenerationPayload(team, pack) {
-  return {
-    teamName: team.name,
-    teamId: team.teamId,
-    clothingName: pack.name,
-    clothingId: pack.clothingId,
-  };
-}
+    .hero-copy p {
+      max-width: 680px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.75;
+    }
 
-export const componentSelfTests = [
-  {
-    name: "filterTeams finds a team by name",
-    passed: filterTeams(teams, "ars").length === 1 && filterTeams(teams, "ars")[0].name === "Arsenal",
-  },
-  {
-    name: "filterTeams finds a team by ID",
-    passed: filterTeams(teams, "241").length === 1 && filterTeams(teams, "241")[0].name === "Barcelona",
-  },
-  {
-    name: "filterTeams returns all teams for an empty query",
-    passed: filterTeams(teams, "").length === teams.length,
-  },
-  {
-    name: "createGenerationPayload keeps selected team and clothing IDs",
-    passed:
-      createGenerationPayload(teams[0], clothingPacks[0]).teamId === "1" &&
-      createGenerationPayload(teams[0], clothingPacks[0]).clothingId === "122156",
-  },
-];
+    .card {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      border-radius: 32px;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+    }
 
-export default function FC26ModGeneratorWebsiteMVP() {
-  const [teamQuery, setTeamQuery] = useState("");
-  const [selectedTeam, setSelectedTeam] = useState(teams[0]);
-  const [selectedPack, setSelectedPack] = useState(clothingPacks[0]);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [status, setStatus] = useState("ready");
+    .card-content {
+      padding: 24px;
+    }
 
-  const filteredTeams = useMemo(() => filterTeams(teams, teamQuery), [teamQuery]);
-  const generationPayload = createGenerationPayload(selectedTeam, selectedPack);
+    .preview-card {
+      animation: fadeScale 0.45s ease 0.1s both;
+    }
 
-  const handleGenerate = () => {
-    setIsGenerating(true);
-    setStatus("generating");
+    .selection-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
 
-    window.setTimeout(() => {
-      setIsGenerating(false);
-      setStatus("done");
-    }, 800);
-  };
+    .small-label {
+      margin: 0 0 6px;
+      color: var(--muted);
+      font-size: 14px;
+    }
 
-  return (
-    <div className="min-h-screen bg-zinc-950 text-white">
-      <div className="mx-auto flex max-w-7xl flex-col gap-10 px-5 py-8 md:px-8 lg:px-10">
-        <header className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-zinc-950 shadow-lg">
-              <Icon name="shirt" className="h-6 w-6" />
+    .selection-header h3,
+    .pack-preview h4,
+    .section-title h3 {
+      margin: 0;
+      letter-spacing: -0.04em;
+    }
+
+    .selection-header h3 {
+      font-size: 28px;
+    }
+
+    .id-box {
+      background: var(--white);
+      color: var(--black);
+      border-radius: 18px;
+      padding: 14px 18px;
+      text-align: right;
+      min-width: 118px;
+    }
+
+    .id-box .label {
+      margin: 0 0 4px;
+      color: #71717a;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-weight: 700;
+      font-size: 11px;
+    }
+
+    .id-box .value {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .pack-preview {
+      border: 1px solid var(--border);
+      background: var(--panel-strong);
+      border-radius: 28px;
+      padding: 22px;
+      margin-bottom: 20px;
+    }
+
+    .pack-preview h4 {
+      font-size: 22px;
+    }
+
+    .pack-preview p.description {
+      color: var(--muted);
+      line-height: 1.6;
+      margin: 10px 0 0;
+      font-size: 14px;
+    }
+
+    .inline-id {
+      margin-top: 18px;
+      border-radius: 18px;
+      background: rgba(0, 0, 0, 0.28);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      color: var(--muted);
+    }
+
+    .inline-id strong {
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 18px;
+    }
+
+    .payload {
+      border: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.18);
+      border-radius: 20px;
+      padding: 16px;
+      margin-bottom: 18px;
+    }
+
+    .payload p {
+      margin: 0 0 12px;
+      color: var(--muted-2);
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      color: #d4d4d8;
+      font-size: 12px;
+      line-height: 1.6;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .generate-button {
+      width: 100%;
+      min-height: 54px;
+      border: none;
+      border-radius: 18px;
+      background: var(--white);
+      color: var(--black);
+      font-weight: 800;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+
+    .generate-button:hover {
+      background: #e4e4e7;
+      transform: translateY(-1px);
+    }
+
+    .generate-button:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .success {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+      border: 1px solid var(--green-border);
+      background: var(--green-bg);
+      color: var(--green);
+      padding: 14px 16px;
+      border-radius: 18px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .success.show {
+      display: flex;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 0.85fr 1.15fr;
+      gap: 24px;
+    }
+
+    .section-title h3 {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .section-title p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .search-box {
+      margin: 22px 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border: 1px solid var(--border);
+      background: var(--panel-strong);
+      border-radius: 18px;
+      padding: 14px 16px;
+      color: var(--muted-2);
+    }
+
+    .search-box input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    .search-box input::placeholder {
+      color: #52525b;
+    }
+
+    .team-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 420px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .team-button,
+    .pack-button {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: var(--panel-strong);
+      color: var(--text);
+      text-align: left;
+      transition: background 0.15s ease, color 0.15s ease, border 0.15s ease, transform 0.15s ease;
+    }
+
+    .team-button:hover,
+    .pack-button:hover {
+      background: #27272a;
+      transform: translateY(-1px);
+    }
+
+    .team-button.active,
+    .pack-button.active {
+      background: var(--white);
+      color: var(--black);
+      border-color: var(--white);
+    }
+
+    .team-button {
+      border-radius: 18px;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .team-button .team-name {
+      font-weight: 700;
+    }
+
+    .team-button .team-id {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      opacity: 0.7;
+      font-size: 14px;
+    }
+
+    .empty-state {
+      display: none;
+      border: 1px solid var(--border);
+      background: var(--panel-strong);
+      color: var(--muted);
+      border-radius: 18px;
+      padding: 16px;
+      font-size: 14px;
+    }
+
+    .packs-grid {
+      margin-top: 22px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .pack-button {
+      border-radius: 26px;
+      padding: 20px;
+    }
+
+    .pack-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .pack-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.10);
+      color: white;
+      display: grid;
+      place-items: center;
+    }
+
+    .pack-button.active .pack-icon,
+    .pack-button.active .badge {
+      background: var(--black);
+      color: var(--white);
+    }
+
+    .badge {
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.10);
+      color: #d4d4d8;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .pack-category {
+      margin: 0 0 4px;
+      opacity: 0.6;
+      font-size: 14px;
+    }
+
+    .pack-name {
+      margin: 0;
+      font-size: 19px;
+      letter-spacing: -0.03em;
+    }
+
+    .pack-desc {
+      margin: 10px 0 16px;
+      opacity: 0.7;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .pack-id {
+      border-radius: 16px;
+      background: rgba(0, 0, 0, 0.12);
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 14px;
+    }
+
+    .tests {
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 24px;
+      padding: 18px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .tests strong {
+      color: var(--text);
+    }
+
+    .tests ul {
+      margin: 12px 0 0;
+      padding-left: 20px;
+      line-height: 1.8;
+    }
+
+    .tests .pass {
+      color: var(--green);
+    }
+
+    svg {
+      width: 20px;
+      height: 20px;
+      flex: 0 0 auto;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(18px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeScale {
+      from {
+        opacity: 0;
+        transform: scale(0.96);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    @media (max-width: 900px) {
+      .header,
+      .hero,
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .header {
+        align-items: flex-start;
+      }
+
+      .hero-copy h2 {
+        font-size: 44px;
+      }
+
+      .packs-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .page {
+        padding: 22px 14px;
+      }
+
+      .selection-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .id-box {
+        width: 100%;
+        text-align: left;
+      }
+
+      .pill {
+        white-space: normal;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="container">
+      <header class="header">
+        <div class="brand">
+          <div class="brand-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 4 5 5.5 3 10l4 2v8h10v-8l4-2-2-4.5L16 4" />
+              <path d="M8 4c.7 2 2 3 4 3s3.3-1 4-3" />
+            </svg>
+          </div>
+          <div>
+            <p class="eyebrow">FC26 Mods</p>
+            <h1>Auto Clothing Generator</h1>
+          </div>
+        </div>
+
+        <div class="pill">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+          Members-only download system coming next
+        </div>
+      </header>
+
+      <section class="hero">
+        <div class="hero-copy">
+          <div class="pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3 10.5 8.5 5 10l5.5 1.5L12 17l1.5-5.5L19 10l-5.5-1.5L12 3Z" />
+              <path d="M19 15v4" />
+              <path d="M21 17h-4" />
+              <path d="M5 3v3" />
+              <path d="M6.5 4.5h-3" />
+            </svg>
+            Choose team, choose clothing, generate mod file
+          </div>
+
+          <h2>Custom FC26 clothing mods without manual LUA editing.</h2>
+          <p>
+            This is the first website MVP. The final version will send the selected team ID and clothing ID to your generator backend, edit the LUA template, export the mod, and return a ready download.
+          </p>
+        </div>
+
+        <div class="card preview-card">
+          <div class="card-content">
+            <div class="selection-header">
+              <div>
+                <p class="small-label">Current selection</p>
+                <h3 id="selectedTeamName">Arsenal</h3>
+              </div>
+              <div class="id-box">
+                <p class="label">Team ID</p>
+                <p class="value" id="selectedTeamId">1</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm uppercase tracking-[0.35em] text-zinc-400">FC26 Mods</p>
-              <h1 className="text-2xl font-semibold tracking-tight">Auto Clothing Generator</h1>
+
+            <div class="pack-preview">
+              <p class="small-label">Clothing pack</p>
+              <h4 id="selectedPackName">Black Anthem Jacket</h4>
+              <p class="description" id="selectedPackDescription">Clean black prematch anthem jacket for managers and staff.</p>
+              <div class="inline-id">
+                <span>Clothing ID</span>
+                <strong id="selectedClothingId">122156</strong>
+              </div>
+            </div>
+
+            <div class="payload">
+              <p>Backend payload preview</p>
+              <pre id="payloadPreview"></pre>
+            </div>
+
+            <button class="generate-button" id="generateButton" type="button">
+              <span id="generateButtonText">Generate Download</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3v12" />
+                <path d="m7 10 5 5 5-5" />
+                <path d="M5 21h14" />
+              </svg>
+            </button>
+
+            <div class="success" id="successMessage">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="m9 12 2 2 4-5" />
+              </svg>
+              Demo complete. Next step is connecting this button to the backend generator.
             </div>
           </div>
-          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-300">
-            <Icon name="lock" className="h-4 w-4" />
-            Members-only download system coming next
+        </div>
+      </section>
+
+      <main class="main-grid">
+        <section class="card">
+          <div class="card-content">
+            <div class="section-title">
+              <h3>1. Select team</h3>
+              <p>Later this list can come from Google Sheets, a JSON file, or a database.</p>
+            </div>
+
+            <label class="search-box" for="teamSearch">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.3-4.3" />
+              </svg>
+              <input id="teamSearch" type="text" placeholder="Search team name or ID" />
+            </label>
+
+            <div class="team-list" id="teamList"></div>
+            <div class="empty-state" id="emptyTeams">No teams found. Try another name or ID.</div>
           </div>
-        </header>
-
-        <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="space-y-6"
-          >
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-300">
-              <Icon name="sparkles" className="h-4 w-4" />
-              Choose team, choose clothing, generate mod file
-            </div>
-            <div className="space-y-4">
-              <h2 className="max-w-3xl text-5xl font-semibold tracking-tight md:text-6xl">
-                Custom FC26 clothing mods without manual LUA editing.
-              </h2>
-              <p className="max-w-2xl text-lg leading-8 text-zinc-400">
-                This is the first website MVP. The final version will send the selected team ID and clothing ID to your generator backend, edit the LUA template, export the mod, and return a ready download.
-              </p>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            <Card className="rounded-[2rem] border-white/10 bg-white/[0.04] shadow-2xl">
-              <CardContent className="space-y-5 p-6">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-sm text-zinc-400">Current selection</p>
-                    <h3 className="text-2xl font-semibold text-white">{selectedTeam.name}</h3>
-                  </div>
-                  <div className="rounded-2xl bg-white px-4 py-3 text-right text-zinc-950">
-                    <p className="text-xs font-medium uppercase tracking-widest text-zinc-500">Team ID</p>
-                    <p className="text-xl font-bold">{selectedTeam.teamId}</p>
-                  </div>
-                </div>
-
-                <div className="rounded-3xl border border-white/10 bg-zinc-900 p-5">
-                  <p className="text-sm text-zinc-400">Clothing pack</p>
-                  <h4 className="mt-1 text-xl font-semibold text-white">{selectedPack.name}</h4>
-                  <p className="mt-2 text-sm leading-6 text-zinc-400">{selectedPack.description}</p>
-                  <div className="mt-4 flex items-center justify-between rounded-2xl bg-black/30 p-4">
-                    <span className="text-sm text-zinc-400">Clothing ID</span>
-                    <span className="font-mono text-lg text-white">{selectedPack.clothingId}</span>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                  <p className="text-xs uppercase tracking-widest text-zinc-500">Backend payload preview</p>
-                  <pre className="mt-3 overflow-auto text-xs leading-6 text-zinc-300">
-                    {JSON.stringify(generationPayload, null, 2)}
-                  </pre>
-                </div>
-
-                <Button
-                  onClick={handleGenerate}
-                  disabled={isGenerating}
-                  className="h-13 w-full rounded-2xl bg-white text-base font-semibold text-zinc-950 hover:bg-zinc-200"
-                >
-                  {isGenerating ? "Generating preview..." : "Generate Download"}
-                  <Icon name="download" className="ml-2 h-5 w-5" />
-                </Button>
-
-                {status === "done" && (
-                  <div className="flex items-center gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-200">
-                    <Icon name="check" className="h-5 w-5" />
-                    Demo complete. Next step is connecting this button to the backend generator.
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
         </section>
 
-        <main className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
-          <Card className="rounded-[2rem] border-white/10 bg-white/[0.04]">
-            <CardContent className="space-y-5 p-6">
-              <div>
-                <h3 className="text-2xl font-semibold text-white">1. Select team</h3>
-                <p className="mt-2 text-sm leading-6 text-zinc-400">
-                  Later this list can come from Google Sheets, a JSON file, or a database.
-                </p>
-              </div>
+        <section class="card">
+          <div class="card-content">
+            <div class="section-title">
+              <h3>2. Select clothing</h3>
+              <p>Each pack will point to the assets and the clothing ID that must be inserted into the LUA template.</p>
+            </div>
 
-              <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-zinc-900 px-4 py-3">
-                <Icon name="search" className="h-5 w-5 text-zinc-500" />
-                <input
-                  value={teamQuery}
-                  onChange={(event) => setTeamQuery(event.target.value)}
-                  placeholder="Search team name or ID"
-                  className="w-full bg-transparent text-sm text-white outline-none placeholder:text-zinc-600"
-                />
-              </div>
+            <div class="packs-grid" id="packsGrid"></div>
+          </div>
+        </section>
+      </main>
 
-              <div className="max-h-[420px] space-y-2 overflow-auto pr-1">
-                {filteredTeams.length > 0 ? (
-                  filteredTeams.map((team) => (
-                    <button
-                      key={team.id}
-                      onClick={() => setSelectedTeam(team)}
-                      className={cx(
-                        "flex w-full items-center justify-between rounded-2xl border p-4 text-left transition",
-                        selectedTeam.id === team.id
-                          ? "border-white bg-white text-zinc-950"
-                          : "border-white/10 bg-zinc-900 text-white hover:bg-zinc-800"
-                      )}
-                    >
-                      <span className="font-medium">{team.name}</span>
-                      <span className="font-mono text-sm opacity-70">{team.teamId}</span>
-                    </button>
-                  ))
-                ) : (
-                  <div className="rounded-2xl border border-white/10 bg-zinc-900 p-4 text-sm text-zinc-400">
-                    No teams found. Try another name or ID.
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-[2rem] border-white/10 bg-white/[0.04]">
-            <CardContent className="space-y-5 p-6">
-              <div>
-                <h3 className="text-2xl font-semibold text-white">2. Select clothing</h3>
-                <p className="mt-2 text-sm leading-6 text-zinc-400">
-                  Each pack will point to the assets and the clothing ID that must be inserted into the LUA template.
-                </p>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                {clothingPacks.map((pack) => (
-                  <button
-                    key={pack.id}
-                    onClick={() => setSelectedPack(pack)}
-                    className={cx(
-                      "group rounded-3xl border p-5 text-left transition",
-                      selectedPack.id === pack.id
-                        ? "border-white bg-white text-zinc-950"
-                        : "border-white/10 bg-zinc-900 text-white hover:bg-zinc-800"
-                    )}
-                  >
-                    <div className="mb-5 flex items-center justify-between">
-                      <div
-                        className={cx(
-                          "flex h-12 w-12 items-center justify-center rounded-2xl",
-                          selectedPack.id === pack.id
-                            ? "bg-zinc-950 text-white"
-                            : "bg-white/10 text-white"
-                        )}
-                      >
-                        <Icon name="shield" className="h-6 w-6" />
-                      </div>
-                      <span
-                        className={cx(
-                          "rounded-full px-3 py-1 text-xs font-semibold",
-                          selectedPack.id === pack.id
-                            ? "bg-zinc-950 text-white"
-                            : "bg-white/10 text-zinc-300"
-                        )}
-                      >
-                        {pack.badge}
-                      </span>
-                    </div>
-                    <p className="text-sm opacity-60">{pack.category}</p>
-                    <h4 className="mt-1 text-lg font-semibold">{pack.name}</h4>
-                    <p className="mt-2 text-sm leading-6 opacity-70">{pack.description}</p>
-                    <div className="mt-4 rounded-2xl bg-black/10 p-3 font-mono text-sm">
-                      ID: {pack.clothingId}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </main>
-      </div>
+      <section class="tests">
+        <strong>Self-tests:</strong>
+        <ul id="testList"></ul>
+      </section>
     </div>
-  );
-}
+  </div>
+
+  <script>
+    const teams = [
+      { id: 1, name: "Arsenal", teamId: "1" },
+      { id: 2, name: "Chelsea", teamId: "5" },
+      { id: 3, name: "Liverpool", teamId: "9" },
+      { id: 4, name: "Manchester City", teamId: "10" },
+      { id: 5, name: "Manchester United", teamId: "11" },
+      { id: 6, name: "Tottenham Hotspur", teamId: "18" },
+      { id: 7, name: "Real Madrid", teamId: "243" },
+      { id: 8, name: "Barcelona", teamId: "241" }
+    ];
+
+    const clothingPacks = [
+      {
+        id: "anthem-black",
+        name: "Black Anthem Jacket",
+        clothingId: "122156",
+        category: "Anthem Jacket",
+        description: "Clean black prematch anthem jacket for managers and staff.",
+        badge: "Popular"
+      },
+      {
+        id: "anthem-white",
+        name: "White Anthem Jacket",
+        clothingId: "122172",
+        category: "Anthem Jacket",
+        description: "Minimal white jacket with premium sideline look.",
+        badge: "New"
+      },
+      {
+        id: "worldcup-coat",
+        name: "World Cup Manager Coat",
+        clothingId: "400070",
+        category: "Manager Clothing",
+        description: "Tournament-style winter coat for World Cup career saves.",
+        badge: "FC26"
+      },
+      {
+        id: "training-top",
+        name: "Elite Training Top",
+        clothingId: "422105",
+        category: "Training Wear",
+        description: "Modern training top designed for pre-match tunnel scenes.",
+        badge: "Beta"
+      }
+    ];
+
+    let selectedTeam = teams[0];
+    let selectedPack = clothingPacks[0];
+
+    const teamListElement = document.getElementById("teamList");
+    const packsGridElement = document.getElementById("packsGrid");
+    const teamSearchElement = document.getElementById("teamSearch");
+    const emptyTeamsElement = document.getElementById("emptyTeams");
+    const selectedTeamNameElement = document.getElementById("selectedTeamName");
+    const selectedTeamIdElement = document.getElementById("selectedTeamId");
+    const selectedPackNameElement = document.getElementById("selectedPackName");
+    const selectedPackDescriptionElement = document.getElementById("selectedPackDescription");
+    const selectedClothingIdElement = document.getElementById("selectedClothingId");
+    const payloadPreviewElement = document.getElementById("payloadPreview");
+    const generateButtonElement = document.getElementById("generateButton");
+    const generateButtonTextElement = document.getElementById("generateButtonText");
+    const successMessageElement = document.getElementById("successMessage");
+    const testListElement = document.getElementById("testList");
+
+    function filterTeams(teamList, query) {
+      const cleanQuery = String(query || "").trim().toLowerCase();
+
+      if (!cleanQuery) {
+        return teamList;
+      }
+
+      return teamList.filter((team) => {
+        return team.name.toLowerCase().includes(cleanQuery) || String(team.teamId).includes(cleanQuery);
+      });
+    }
+
+    function createGenerationPayload(team, pack) {
+      return {
+        teamName: team.name,
+        teamId: team.teamId,
+        clothingName: pack.name,
+        clothingId: pack.clothingId
+      };
+    }
+
+    function shieldIcon() {
+      return `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"></path>
+        </svg>
+      `;
+    }
+
+    function renderTeams() {
+      const filteredTeams = filterTeams(teams, teamSearchElement.value);
+      teamListElement.innerHTML = "";
+      emptyTeamsElement.style.display = filteredTeams.length ? "none" : "block";
+
+      filteredTeams.forEach((team) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `team-button ${team.id === selectedTeam.id ? "active" : ""}`;
+        button.innerHTML = `
+          <span class="team-name">${team.name}</span>
+          <span class="team-id">${team.teamId}</span>
+        `;
+        button.addEventListener("click", () => {
+          selectedTeam = team;
+          successMessageElement.classList.remove("show");
+          updatePreview();
+          renderTeams();
+        });
+        teamListElement.appendChild(button);
+      });
+    }
+
+    function renderPacks() {
+      packsGridElement.innerHTML = "";
+
+      clothingPacks.forEach((pack) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `pack-button ${pack.id === selectedPack.id ? "active" : ""}`;
+        button.innerHTML = `
+          <div class="pack-top">
+            <div class="pack-icon">${shieldIcon()}</div>
+            <span class="badge">${pack.badge}</span>
+          </div>
+          <p class="pack-category">${pack.category}</p>
+          <h4 class="pack-name">${pack.name}</h4>
+          <p class="pack-desc">${pack.description}</p>
+          <div class="pack-id">ID: ${pack.clothingId}</div>
+        `;
+        button.addEventListener("click", () => {
+          selectedPack = pack;
+          successMessageElement.classList.remove("show");
+          updatePreview();
+          renderPacks();
+        });
+        packsGridElement.appendChild(button);
+      });
+    }
+
+    function updatePreview() {
+      selectedTeamNameElement.textContent = selectedTeam.name;
+      selectedTeamIdElement.textContent = selectedTeam.teamId;
+      selectedPackNameElement.textContent = selectedPack.name;
+      selectedPackDescriptionElement.textContent = selectedPack.description;
+      selectedClothingIdElement.textContent = selectedPack.clothingId;
+      payloadPreviewElement.textContent = JSON.stringify(createGenerationPayload(selectedTeam, selectedPack), null, 2);
+    }
+
+    function handleGenerate() {
+      generateButtonElement.disabled = true;
+      generateButtonTextElement.textContent = "Generating preview...";
+      successMessageElement.classList.remove("show");
+
+      window.setTimeout(() => {
+        generateButtonElement.disabled = false;
+        generateButtonTextElement.textContent = "Generate Download";
+        successMessageElement.classList.add("show");
+      }, 800);
+    }
+
+    function runSelfTests() {
+      const tests = [
+        {
+          name: "filterTeams finds a team by name",
+          passed: filterTeams(teams, "ars").length === 1 && filterTeams(teams, "ars")[0].name === "Arsenal"
+        },
+        {
+          name: "filterTeams finds a team by ID",
+          passed: filterTeams(teams, "241").length === 1 && filterTeams(teams, "241")[0].name === "Barcelona"
+        },
+        {
+          name: "filterTeams returns all teams for an empty query",
+          passed: filterTeams(teams, "").length === teams.length
+        },
+        {
+          name: "createGenerationPayload keeps selected team and clothing IDs",
+          passed: createGenerationPayload(teams[0], clothingPacks[0]).teamId === "1" && createGenerationPayload(teams[0], clothingPacks[0]).clothingId === "122156"
+        }
+      ];
+
+      testListElement.innerHTML = "";
+      tests.forEach((test) => {
+        const item = document.createElement("li");
+        item.className = test.passed ? "pass" : "fail";
+        item.textContent = `${test.passed ? "PASS" : "FAIL"}: ${test.name}`;
+        testListElement.appendChild(item);
+      });
+    }
+
+    teamSearchElement.addEventListener("input", renderTeams);
+    generateButtonElement.addEventListener("click", handleGenerate);
+
+    renderTeams();
+    renderPacks();
+    updatePreview();
+    runSelfTests();
+  </script>
+</body>
+</html>
