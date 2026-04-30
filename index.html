@@ -7,6 +7,38 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-zinc-50 text-zinc-950">
+
+  <div id="memberOverlay" class="fixed inset-0 z-[9999] flex items-center justify-center bg-zinc-950/90 px-4 backdrop-blur-sm">
+    <div class="w-full max-w-md rounded-3xl border border-zinc-800 bg-white p-6 shadow-2xl sm:p-8">
+      <p class="mb-2 text-sm uppercase tracking-[0.2em] text-zinc-500">Studio Pass</p>
+      <h2 class="text-2xl font-semibold tracking-tight text-zinc-950">Member access required</h2>
+      <p class="mt-3 text-sm leading-6 text-zinc-600">
+        Enter the email connected to your Studio Pass to continue.
+      </p>
+
+      <label class="mt-6 block">
+        <span class="mb-2 block text-sm font-medium text-zinc-700">Email</span>
+        <input
+          id="memberEmailInput"
+          type="email"
+          autocomplete="email"
+          placeholder="you@example.com"
+          class="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-zinc-400"
+        />
+      </label>
+
+      <button
+        id="memberCheckBtn"
+        type="button"
+        class="mt-4 flex w-full items-center justify-center rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-300"
+      >
+        Continue
+      </button>
+
+      <p id="memberStatus" class="mt-4 min-h-5 text-sm text-zinc-500"></p>
+    </div>
+  </div>
+
   <main class="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-6xl">
       <header class="mb-8 rounded-3xl bg-zinc-950 p-6 text-white shadow-sm sm:p-8">
@@ -105,6 +137,7 @@
 
 <script>
 const TEAMS_CSV_URL = "https://docs.google.com/spreadsheets/d/1vV96ejjN3QLqSGPpINSiZBrWPddbI3ZOdY_Z8PO4zKI/export?format=csv&gid=0";
+const MEMBERS_CSV_URL = "https://docs.google.com/spreadsheets/d/1c5FAK1GhBC9Cym0QrPumUhuBh6Bv56LClU-wDSfRKos/export?format=csv&gid=0";
 const TOPS_CSV_URL = "https://docs.google.com/spreadsheets/d/1ZUNZ7N5aOrTln8HeSeQgCsn3PJcUCxdMDsuHNj05Jgc/export?format=csv&gid=0";
 const BOTTOMS_CSV_URL = "https://docs.google.com/spreadsheets/d/1ZUNZ7N5aOrTln8HeSeQgCsn3PJcUCxdMDsuHNj05Jgc/export?format=csv&gid=1560003768";
 const SHOES_CSV_URL = "https://docs.google.com/spreadsheets/d/1ZUNZ7N5aOrTln8HeSeQgCsn3PJcUCxdMDsuHNj05Jgc/export?format=csv&gid=1252043499";
@@ -369,7 +402,76 @@ function updateAll(){
   el("downloadInstall").disabled=!(validTeam&&(summerOutfits.length||winterOutfits.length));
   el("luaPreview").textContent=installLua(validTeam?team:0);
 }
+
+function normalizeEmail(value){
+  return String(value || "").trim().toLowerCase();
+}
+
+function normalizeLevel(value){
+  return String(value || "").trim().toLowerCase();
+}
+
+function memberRowMatches(row, email){
+  const rowEmail = normalizeEmail(row.Email ?? row.email ?? row.EMAIL ?? row["Email Address"] ?? row["email address"]);
+  const rowLevel = normalizeLevel(row.Level ?? row.level ?? row.LEVEL ?? row.Pass ?? row.pass);
+  return rowEmail === email && rowLevel === "studio pass";
+}
+
+async function checkMemberAccess(email){
+  const csv = await loadCsv(MEMBERS_CSV_URL);
+  const rows = rowsToObjects(csv);
+  return rows.some((row) => memberRowMatches(row, email));
+}
+
+function setupMemberGate(){
+  const overlay = el("memberOverlay");
+  const input = el("memberEmailInput");
+  const button = el("memberCheckBtn");
+  const status = el("memberStatus");
+
+  if(!overlay || !input || !button || !status) return;
+
+  const tryAccess = async () => {
+    const email = normalizeEmail(input.value);
+
+    if(!email || !email.includes("@")){
+      status.textContent = "Please enter a valid email.";
+      status.className = "mt-4 min-h-5 text-sm text-red-600";
+      return;
+    }
+
+    button.disabled = true;
+    status.textContent = "Checking membership…";
+    status.className = "mt-4 min-h-5 text-sm text-zinc-500";
+
+    try{
+      const allowed = await checkMemberAccess(email);
+
+      if(allowed){
+        overlay.classList.add("hidden");
+        status.textContent = "";
+      }else{
+        status.textContent = "Access denied. This email does not have Studio Pass access.";
+        status.className = "mt-4 min-h-5 text-sm text-red-600";
+      }
+    }catch(error){
+      status.textContent = "Could not check members sheet. Make sure the sheet is public or published to web.";
+      status.className = "mt-4 min-h-5 text-sm text-red-600";
+    }finally{
+      button.disabled = false;
+    }
+  };
+
+  button.onclick = tryAccess;
+  input.addEventListener("keydown", (event) => {
+    if(event.key === "Enter") tryAccess();
+  });
+
+  setTimeout(() => input.focus(), 100);
+}
+
 async function init(){
+  setupMemberGate();
   el("teamListBtn").onclick=()=>{teamMode="list";updateAll();};
   el("customTeamBtn").onclick=()=>{teamMode="custom";updateAll();};
   el("teamSearch").oninput=renderTeams;
