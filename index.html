@@ -338,20 +338,27 @@ function renderSteps(kind){
   const categoryItems=skipCat ? brandItems : (cat ? brandItems.filter(x=>x.category===cat) : []);
   if(skipCat || cat){
     const productsList=unique(categoryItems,"product").map(p=>categoryItems.find(x=>x.product===p));
-    html += `<div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">${productsList.map(item=>`
+    html += `<div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">${productsList.map(item=>{
+      const displayItem = selected[kind]?.product === item.product ? selected[kind] : item;
+      return `
       <button class="prod-btn overflow-hidden rounded-2xl border bg-white text-left shadow-sm hover:shadow-md ${prod===item.product?"border-zinc-950 ring-2 ring-zinc-950":"border-zinc-200"}" data-kind="${kind}" data-prod="${item.product}">
-        <div class="aspect-square bg-zinc-100"><img src="${item.image}" alt="${item.name}" class="h-full w-full object-cover" /></div>
+        <div class="aspect-square bg-zinc-100"><img src="${displayItem.image}" alt="${displayItem.name}" class="h-full w-full object-cover" /></div>
         <div class="p-3">
-          <div class="line-clamp-2 text-sm font-medium text-zinc-900">${item.product}</div>
-          <div class="mt-1 text-xs text-zinc-500">${item.name}</div>
-          <div class="mt-2 text-[11px] text-zinc-500">${kind==="top"?"Sleeve: "+item.sleeve:kind==="bottom"?"Length: "+item.pants:"Type: "+item.type}</div>
+          <div class="line-clamp-2 text-sm font-medium text-zinc-900">${displayItem.product}</div>
+          <div class="mt-1 text-xs text-zinc-500">${displayItem.name}</div>
+          <div class="mt-1 text-xs font-medium text-zinc-700">${displayItem.color}</div>
+          <div class="mt-2 text-[11px] text-zinc-500">${kind==="top"?"Sleeve: "+displayItem.sleeve:kind==="bottom"?"Length: "+displayItem.pants:"Type: "+displayItem.type}</div>
         </div>
-      </button>`).join("")}</div>`;
+      </button>`;
+    }).join("")}</div>`;
   }
   if(prod){
     const colors=categoryItems.filter(x=>x.product===prod);
     html += `<div class="mt-4 rounded-2xl bg-white p-3"><div class="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">Color</div><div class="flex flex-wrap gap-2">${colors.map(item=>`
-      <button class="color-btn rounded-2xl border px-3 py-2 text-sm ${selected[kind]?.key===item.key?"border-zinc-950 bg-zinc-950 text-white":"border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"}" data-kind="${kind}" data-key="${item.key}">${item.color}</button>`).join("")}</div></div>`;
+      <button class="color-btn flex items-center gap-2 rounded-2xl border px-3 py-2 text-sm ${selected[kind]?.key===item.key?"border-zinc-950 bg-zinc-950 text-white":"border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"}" data-kind="${kind}" data-key="${item.key}">
+        <img src="${item.image}" alt="${item.color}" class="h-6 w-6 rounded-full object-cover" />
+        <span>${item.color}</span>
+      </button>`).join("")}</div></div>`;
   }
   step.innerHTML=html;
   step.querySelectorAll(".cat-btn").forEach(b=>b.onclick=()=>toggleCategory(b.dataset.kind,b.dataset.cat));
