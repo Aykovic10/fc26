@@ -13,7 +13,7 @@
       <p class="mb-2 text-sm uppercase tracking-[0.2em] text-zinc-500">Studio Pass</p>
       <h2 class="text-2xl font-semibold tracking-tight text-zinc-950">Member access required</h2>
       <p class="mt-3 text-sm leading-6 text-zinc-600">
-        Enter the email connected to your Studio Pass to continue.
+        Enter the email connected to your Studio Pass. Once verified, the generator will open.
       </p>
 
       <label class="mt-6 block">
@@ -39,7 +39,7 @@
     </div>
   </div>
 
-  <main class="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
+  <main id="mainApp" class="hidden min-h-screen px-4 py-8 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-6xl">
       <header class="mb-8 rounded-3xl bg-zinc-950 p-6 text-white shadow-sm sm:p-8">
         <p class="mb-2 text-sm uppercase tracking-[0.2em] text-zinc-400">FC26 Live Editor</p>
@@ -125,10 +125,11 @@
               <button id="downloadResetAll" class="flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-medium text-zinc-800">× Download Reset All</button>
             </div>
           </section>
-
           <section class="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
-            <button id="togglePreview" class="mb-4 flex w-full items-center justify-between rounded-2xl bg-zinc-50 px-4 py-3 text-left text-sm font-medium text-zinc-800">Lua preview <span>Show</span></button>
-            <pre id="luaPreview" class="hidden max-h-[520px] overflow-auto rounded-2xl bg-zinc-950 p-4 text-xs leading-relaxed text-zinc-100"></pre>
+            <h2 class="mb-4 text-xl font-semibold">Studio Pass protected</h2>
+            <p class="text-sm leading-6 text-zinc-600">
+              The generator opens after Studio Pass verification. Lua files are generated securely during download.
+            </p>
           </section>
         </aside>
       </div>
@@ -141,7 +142,9 @@ const MEMBERS_CSV_URL = "https://docs.google.com/spreadsheets/d/1c5FAK1GhBC9Cym0
 const TOPS_CSV_URL = "https://docs.google.com/spreadsheets/d/1ZUNZ7N5aOrTln8HeSeQgCsn3PJcUCxdMDsuHNj05Jgc/export?format=csv&gid=0";
 const BOTTOMS_CSV_URL = "https://docs.google.com/spreadsheets/d/1ZUNZ7N5aOrTln8HeSeQgCsn3PJcUCxdMDsuHNj05Jgc/export?format=csv&gid=1560003768";
 const SHOES_CSV_URL = "https://docs.google.com/spreadsheets/d/1ZUNZ7N5aOrTln8HeSeQgCsn3PJcUCxdMDsuHNj05Jgc/export?format=csv&gid=1252043499";
+const DOWNLOAD_WORKER_URL = "https://curly-wildflower-3d75.aykkeork.workers.dev/"; // Paste your Cloudflare Worker URL here after deploying worker.js
 
+const PRODUCTS_FALLBACK = [];
 const FIXED_SOCKS = { length: 13, style: 1 };
 const FIXED_TOP0 = { id: 0, class: 1, var: 0, recolor: 0 };
 
@@ -153,6 +156,7 @@ let teamMode = "list";
 let season = "summer";
 let summerOutfits = [];
 let winterOutfits = [];
+let validatedStudioPassEmail = "";
 
 function el(id){ return document.getElementById(id); }
 function cls(active){ return active ? "border-zinc-950 bg-zinc-950 text-white" : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"; }
@@ -342,41 +346,20 @@ function renderOutfits(){
   document.querySelectorAll(".remove-outfit").forEach(b=>b.onclick=()=>{ const arr=b.dataset.season==="summer"?summerOutfits:winterOutfits; arr.splice(Number(b.dataset.index),1); updateAll();});
 }
 
-function luaValue(v, level=0){
-  const ind="    ".repeat(level);
-  if(typeof v==="number") return String(v);
-  if(typeof v==="string") return JSON.stringify(v);
-  if(Array.isArray(v)) return `{\n${v.map(x=>"    ".repeat(level+1)+luaValue(x,level+1)+",").join("\n")}\n${ind}}`;
-  if(v&&typeof v==="object") return `{\n${Object.entries(v).map(([k,val])=>"    ".repeat(level+1)+k+" = "+luaValue(val,level+1)+",").join("\n")}\n${ind}}`;
-  return "nil";
+
+function downloadBlobFromResponse(response, fallbackName){
+  return response.blob().then((blob)=>{
+    const disposition = response.headers.get("Content-Disposition") || "";
+    const match = disposition.match(/filename="?([^"]+)"?/i);
+    const filename = match ? match[1] : fallbackName;
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  });
 }
-function outfitLua(o,level=4){
-  return `{\n${"    ".repeat(level)}sleeve = ${o.sleeve},\n${"    ".repeat(level)}pants = ${o.pants},\n${"    ".repeat(level)}top0   = ${luaValue(o.top0,level)},\n${"    ".repeat(level)}top1   = ${luaValue(o.top1,level)},\n${"    ".repeat(level)}bottom = ${luaValue(o.bottom,level)},\n${"    ".repeat(level)}socks  = ${luaValue(o.socks,level)},\n${"    ".repeat(level)}shoes  = ${luaValue(o.shoes,level)},\n${"    ".repeat(level-1)}}`;
-}
-function seasonLua(arr,level=3){
-  if(!arr.length) return "{}";
-  return `{\n${arr.map(o=>"    ".repeat(level)+outfitLua(o,level+1)+",").join("\n")}\n${"    ".repeat(level-1)}}`;
-}
-function normalized(){
-  if(summerOutfits.length&&!winterOutfits.length) return {summer:summerOutfits,winter:summerOutfits};
-  if(winterOutfits.length&&!summerOutfits.length) return {summer:winterOutfits,winter:winterOutfits};
-  return {summer:summerOutfits,winter:winterOutfits};
-}
-function configLua(teamId){
-  const n=normalized();
-  return `return {\n    [${teamId}] = {\n        summer = ${seasonLua(n.summer,3)},\n\n        winter = ${seasonLua(n.winter,3)},\n    },\n}\n`;
-}
-function installLua(teamId){
-  const cfg=configLua(teamId).replace(/^return /,"");
-  return `-- FC26 Manager Outfit Installer\nlocal config_path = string.format("%s\\\\Documents\\\\FC26_ManagerOutfitConfig.lua", os.getenv("USERPROFILE") or "")\n\nlocal function serialize(value, indent)\n    indent = indent or ""\n    if type(value) == "number" then return tostring(value) end\n    if type(value) == "boolean" then return tostring(value) end\n    if type(value) == "string" then return string.format("%q", value) end\n    if type(value) ~= "table" then return "nil" end\n    local nextIndent = indent .. "    "\n    local lines = {"{"}\n    for k, v in pairs(value) do\n        local key = type(k) == "number" and ("[" .. tostring(k) .. "]") or ("[" .. string.format("%q", tostring(k)) .. "]")\n        table.insert(lines, nextIndent .. key .. " = " .. serialize(v, nextIndent) .. ",")\n    end\n    table.insert(lines, indent .. "}")\n    return table.concat(lines, "\\n")\nend\n\nlocal ok, data = pcall(dofile, config_path)\nif not ok or type(data) ~= "table" then data = {} end\nlocal new_outfits = ${cfg}\nfor teamid, outfit in pairs(new_outfits) do data[teamid] = outfit end\nlocal file = io.open(config_path, "w")\nif not file then\n    MessageBox("Install failed", "Could not write config:\\n" .. config_path)\nelse\n    file:write("return ")\n    file:write(serialize(data))\n    file:write("\\n")\n    file:close()\n    MessageBox("Manager outfit installed", "Added/updated team ${teamId}.\\n\\nReload manager screen / match preview.")\nend\n`;
-}
-function resetTeamLua(teamId){
-  return `-- Reset ONE website-generated manager outfit\nlocal TEAM_ID_TO_RESET = ${teamId}\nlocal config_path = string.format("%s\\\\Documents\\\\FC26_ManagerOutfitConfig.lua", os.getenv("USERPROFILE") or "")\nlocal function serialize(value, indent)\n    indent = indent or ""\n    if type(value) == "number" then return tostring(value) end\n    if type(value) == "boolean" then return tostring(value) end\n    if type(value) == "string" then return string.format("%q", value) end\n    if type(value) ~= "table" then return "nil" end\n    local nextIndent = indent .. "    "\n    local lines = {"{"}\n    for k, v in pairs(value) do\n        local key = type(k) == "number" and ("[" .. tostring(k) .. "]") or ("[" .. string.format("%q", tostring(k)) .. "]")\n        table.insert(lines, nextIndent .. key .. " = " .. serialize(v, nextIndent) .. ",")\n    end\n    table.insert(lines, indent .. "}")\n    return table.concat(lines, "\\n")\nend\nlocal ok, data = pcall(dofile, config_path)\nif not ok or type(data) ~= "table" then MessageBox("Reset failed", "Could not read outfit config:\\n" .. config_path) return end\ndata[TEAM_ID_TO_RESET] = nil\nlocal file = io.open(config_path, "w")\nif not file then MessageBox("Reset failed", "Could not write outfit config:\\n" .. config_path) else file:write("return ") file:write(serialize(data)) file:write("\\n") file:close() MessageBox("Team outfit reset", "Removed website-generated outfit for team " .. tostring(TEAM_ID_TO_RESET) .. ".\\n\\nReload manager screen / match preview.") end\n`;
-}
-function resetAllLua(){
-  return `-- Reset ALL website-generated manager outfits\nlocal config_path = string.format("%s\\\\Documents\\\\FC26_ManagerOutfitConfig.lua", os.getenv("USERPROFILE") or "")\nlocal file = io.open(config_path, "w")\nif not file then MessageBox("Reset failed", "Could not write reset config:\\n" .. config_path) else file:write("return {}\\n") file:close() MessageBox("Manager outfits reset", "All website-generated outfits were cleared.\\n\\nReload manager screen / match preview.") end\n`;
-}
-function download(name,text){ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([text],{type:"text/plain"})); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); }
 
 function updateAll(){
   el("teamListBtn").className=`rounded-2xl border px-4 py-3 text-sm font-medium ${cls(teamMode==="list")}`;
@@ -400,36 +383,42 @@ function updateAll(){
   const validTeam = Number.isFinite(team) && team>0;
   el("targetTeam").textContent=validTeam?team:"—";
   el("downloadInstall").disabled=!(validTeam&&(summerOutfits.length||winterOutfits.length));
-  el("luaPreview").textContent=installLua(validTeam?team:0);
 }
 
 function normalizeEmail(value){
   return String(value || "").trim().toLowerCase();
 }
 
-function normalizeLevel(value){
-  return String(value || "").trim().toLowerCase();
-}
+async function verifyStudioPass(email){
+  if(!DOWNLOAD_WORKER_URL){
+    throw new Error("Download backend is not connected yet. Paste your Cloudflare Worker URL into DOWNLOAD_WORKER_URL.");
+  }
 
-function memberRowMatches(row, email){
-  const rowEmail = normalizeEmail(row.Email ?? row.email ?? row.EMAIL ?? row["Email Address"] ?? row["email address"]);
-  const rowLevel = normalizeLevel(row.Level ?? row.level ?? row.LEVEL ?? row.Pass ?? row.pass);
-  return rowEmail === email && rowLevel === "studio pass";
-}
+  const response = await fetch(DOWNLOAD_WORKER_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "validate",
+      email,
+    }),
+  });
 
-async function checkMemberAccess(email){
-  const csv = await loadCsv(MEMBERS_CSV_URL);
-  const rows = rowsToObjects(csv);
-  return rows.some((row) => memberRowMatches(row, email));
+  if(!response.ok){
+    const message = await response.text();
+    throw new Error(message || "Access denied. Studio Pass required.");
+  }
+
+  return true;
 }
 
 function setupMemberGate(){
   const overlay = el("memberOverlay");
+  const mainApp = el("mainApp");
   const input = el("memberEmailInput");
   const button = el("memberCheckBtn");
   const status = el("memberStatus");
 
-  if(!overlay || !input || !button || !status) return;
+  if(!overlay || !mainApp || !input || !button || !status) return;
 
   const tryAccess = async () => {
     const email = normalizeEmail(input.value);
@@ -441,21 +430,17 @@ function setupMemberGate(){
     }
 
     button.disabled = true;
-    status.textContent = "Checking membership…";
+    status.textContent = "Checking Studio Pass…";
     status.className = "mt-4 min-h-5 text-sm text-zinc-500";
 
     try{
-      const allowed = await checkMemberAccess(email);
-
-      if(allowed){
-        overlay.classList.add("hidden");
-        status.textContent = "";
-      }else{
-        status.textContent = "Access denied. This email does not have Studio Pass access.";
-        status.className = "mt-4 min-h-5 text-sm text-red-600";
-      }
+      await verifyStudioPass(email);
+      validatedStudioPassEmail = email;
+      overlay.classList.add("hidden");
+      mainApp.classList.remove("hidden");
+      status.textContent = "";
     }catch(error){
-      status.textContent = "Could not check members sheet. Make sure the sheet is public or published to web.";
+      status.textContent = error.message || "Access denied. Studio Pass required.";
       status.className = "mt-4 min-h-5 text-sm text-red-600";
     }finally{
       button.disabled = false;
@@ -470,6 +455,66 @@ function setupMemberGate(){
   setTimeout(() => input.focus(), 100);
 }
 
+function getActiveTeamId(){
+  return teamMode === "custom" ? Number(el("customTeamInput").value) : Number(selectedTeamId);
+}
+
+async function requestProtectedDownload(scriptType){
+  if(!validatedStudioPassEmail){
+    alert("Please verify your Studio Pass email first.");
+    return;
+  }
+
+  if(!DOWNLOAD_WORKER_URL){
+    alert("Download backend is not connected yet. Paste your Cloudflare Worker URL into DOWNLOAD_WORKER_URL.");
+    return;
+  }
+
+  const team = getActiveTeamId();
+
+  if(scriptType !== "resetAll" && (!Number.isFinite(team) || team <= 0)){
+    alert("Choose a valid team first.");
+    return;
+  }
+
+  if(scriptType === "install" && !(summerOutfits.length || winterOutfits.length)){
+    alert("Add at least one outfit first.");
+    return;
+  }
+
+  const payload = {
+    action: "download",
+    email: validatedStudioPassEmail,
+    scriptType,
+    teamId: team,
+    summerOutfits,
+    winterOutfits,
+  };
+
+  try{
+    const response = await fetch(DOWNLOAD_WORKER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if(!response.ok){
+      const message = await response.text();
+      throw new Error(message || "Download failed.");
+    }
+
+    const fallbackName = scriptType === "resetAll"
+      ? "reset_all_manager_outfits.lua"
+      : scriptType === "resetTeam"
+        ? `reset_manager_outfit_team_${team}.lua`
+        : `install_manager_outfit_team_${team}.lua`;
+
+    await downloadBlobFromResponse(response, fallbackName);
+  }catch(error){
+    alert(error.message || "Download failed.");
+  }
+}
+
 async function init(){
   setupMemberGate();
   el("teamListBtn").onclick=()=>{teamMode="list";updateAll();};
@@ -479,10 +524,9 @@ async function init(){
   el("summerBtn").onclick=()=>{season="summer";updateAll();};
   el("winterBtn").onclick=()=>{season="winter";updateAll();};
   el("addOutfitBtn").onclick=()=>{ const o=currentOutfit(); if(!o)return; (season==="summer"?summerOutfits:winterOutfits).push(o); updateAll(); };
-  el("downloadInstall").onclick=()=>{ const team = teamMode==="custom"?Number(el("customTeamInput").value):Number(selectedTeamId); download(`install_manager_outfit_team_${team}.lua`,installLua(team)); };
-  el("downloadResetTeam").onclick=()=>{ const team = teamMode==="custom"?Number(el("customTeamInput").value):Number(selectedTeamId); download(`reset_manager_outfit_team_${team}.lua`,resetTeamLua(team)); };
-  el("downloadResetAll").onclick=()=>download("reset_all_manager_outfits.lua",resetAllLua());
-  el("togglePreview").onclick=()=>{ const p=el("luaPreview"); p.classList.toggle("hidden"); el("togglePreview").querySelector("span").textContent=p.classList.contains("hidden")?"Show":"Hide"; };
+  el("downloadInstall").onclick=()=>requestProtectedDownload("install"); download(`install_manager_outfit_team_${team}.lua`,installLua(team)); };
+  el("downloadResetTeam").onclick=()=>requestProtectedDownload("resetTeam"); download(`reset_manager_outfit_team_${team}.lua`,resetTeamLua(team)); };
+  el("downloadResetAll").onclick=()=>requestProtectedDownload("resetAll"); p.classList.toggle("hidden"); el("togglePreview").querySelector("span").textContent=p.classList.contains("hidden")?"Show":"Hide"; };
 
   updateAll();
 
