@@ -1,704 +1,151 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>FC26 Manager Outfit Generator</title>
-  <link rel="icon" href="https://cdn.buymeacoffee.com/uploads/profile_pictures/2024/05/e31c55d0bc66ff537c0e507db85699ff.png@300w_0e.webp" />
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-zinc-50 text-zinc-950">
+<label class="mt-6 block">
+    <span class="mb-2 block text-sm font-medium text-zinc-700">Email</span>
+    <input
+      id="memberEmailInput"
+      type="email"
+      autocomplete="email"
+      placeholder="you@example.com"
+      class="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-zinc-400"
+    />
+  </label>
 
-  <div id="memberOverlay" class="fixed inset-0 z-[9999] flex items-center justify-center bg-zinc-950/90 px-4 backdrop-blur-sm">
-    <div class="w-full max-w-md rounded-3xl border border-zinc-800 bg-white p-6 shadow-2xl sm:p-8">
-      <div class="mb-5 flex items-center gap-4">
-        <img src="https://cdn.buymeacoffee.com/uploads/profile_pictures/2024/05/e31c55d0bc66ff537c0e507db85699ff.png@300w_0e.webp" alt="Aykovic10" class="h-14 w-14 rounded-2xl border border-zinc-200 object-cover shadow-sm" />
-        <div>
-          <p class="text-sm uppercase tracking-[0.2em] text-zinc-500">Studio Pass</p>
-          <h2 class="text-2xl font-semibold tracking-tight text-zinc-950">Member access required</h2>
-          <p class="mt-1 text-xs font-medium text-zinc-500">By Aykovic10™</p>
+  <button
+    id="memberCheckBtn"
+    type="button"
+    class="mt-4 flex w-full items-center justify-center rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-300"
+  >
+    Verify & Continue
+  </button>
+
+  <a
+    href="https://buymeacoffee.com/570lns1kjb/membership"
+    target="_blank"
+    rel="noopener noreferrer"
+    class="mt-3 flex w-full items-center justify-center rounded-2xl bg-[#40DCA5] px-5 py-3 text-sm font-semibold text-zinc-950 transition hover:opacity-90"
+  >
+    Get your membership
+  </a>
+
+  <p class="mt-3 text-center text-xs text-zinc-500">
+    Don’t have Studio Pass yet? Get membership, then come back and verify your email.
+  </p>
+
+  <p id="memberStatus" class="mt-4 min-h-5 text-sm text-zinc-500"></p>
+</div>
+
+  <div class="grid gap-6 lg:grid-cols-[1fr_420px]">
+    <section class="space-y-6">
+      <section class="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+        <h2 class="mb-5 text-xl font-semibold">1. Choose team</h2>
+        <div id="teamStatus" class="mb-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600">Loading teams…</div>
+        <div class="mb-4 grid grid-cols-2 gap-3">
+          <button id="teamListBtn" class="rounded-2xl border px-4 py-3 text-sm font-medium">Team list</button>
+          <button id="customTeamBtn" class="rounded-2xl border px-4 py-3 text-sm font-medium">Custom ID</button>
         </div>
-      </div>
-      <p class="mt-3 text-sm leading-6 text-zinc-600">
-        Enter the email connected to your Studio Pass. Once verified, the generator will open.
-      </p>
+        <div id="teamListBox">
+          <label class="block">
+            <span class="mb-2 block text-sm font-medium text-zinc-700">Search team</span>
+            <input id="teamSearch" class="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400" placeholder="Search by team name or ID" />
+          </label>
+          <div id="teamResults" class="mt-3 max-h-72 overflow-auto rounded-2xl border border-zinc-200 bg-white p-2"></div>
+          <p class="mt-2 text-xs text-zinc-500">Showing up to 80 results. Use search for the full database.</p>
+        </div>
+        <div id="customTeamBox" class="hidden">
+          <label class="block">
+            <span class="mb-2 block text-sm font-medium text-zinc-700">Custom team ID</span>
+            <input id="customTeamInput" class="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400" placeholder="Type team ID, e.g. 240" />
+          </label>
+        </div>
+      </section>
 
-      <label class="mt-6 block">
-        <span class="mb-2 block text-sm font-medium text-zinc-700">Email</span>
-        <input
-          id="memberEmailInput"
-          type="email"
-          autocomplete="email"
-          placeholder="you@example.com"
-          class="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-zinc-400"
-        />
-      </label>
+      <section class="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+        <h2 class="mb-5 text-xl font-semibold">2. Build outfit</h2>
+        <div id="productStatus" class="mb-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600">Loading products…</div>
 
-      <button
-        id="memberCheckBtn"
-        type="button"
-        class="mt-4 flex w-full items-center justify-center rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-300"
-      >
-        Verify & Continue
-      </button>
-
-      <a
-        href="https://buymeacoffee.com/570lns1kjb/membership"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="mt-3 flex w-full items-center justify-center rounded-2xl bg-[#40DCA5] px-5 py-3 text-sm font-semibold text-zinc-950 transition hover:opacity-90"
-      >
-        Get your membership
-      </a>
-
-      <p class="mt-3 text-center text-xs text-zinc-500">
-        Don’t have Studio Pass yet? Get membership, then come back and verify your email.
-      </p>
-
-      <p id="memberStatus" class="mt-4 min-h-5 text-sm text-zinc-500"></p>
-    </div>
-  </div>
-
-
-  <div id="imageZoomModal" class="fixed inset-0 z-[9998] hidden items-center justify-center bg-zinc-950/90 px-4 py-6 backdrop-blur-sm">
-    <div class="relative w-full max-w-4xl">
-      <button
-        id="imageZoomClose"
-        type="button"
-        class="absolute right-3 top-3 z-10 rounded-2xl bg-white/90 px-4 py-2 text-sm font-semibold text-zinc-950 shadow-sm transition hover:bg-white"
-      >
-        Close ×
-      </button>
-      <div class="overflow-hidden rounded-3xl border border-white/10 bg-white p-3 shadow-2xl">
-        <img id="imageZoomImg" src="" alt="Product preview" class="max-h-[82vh] w-full rounded-2xl object-contain" />
-      </div>
-    </div>
-  </div>
-
-  <main id="mainApp" class="hidden min-h-screen px-4 py-8 sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-6xl">
-      <header class="mb-8 rounded-3xl bg-zinc-950 p-6 text-white shadow-sm sm:p-8">
-        <div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-          <div class="flex items-center gap-4">
-            <img src="https://cdn.buymeacoffee.com/uploads/profile_pictures/2024/05/e31c55d0bc66ff537c0e507db85699ff.png@300w_0e.webp" alt="Aykovic10" class="h-16 w-16 rounded-2xl border border-white/10 object-cover shadow-sm" />
-            <div>
-              <p class="mb-2 text-sm uppercase tracking-[0.2em] text-zinc-400">FC26 Live Editor</p>
-              <h1 class="text-3xl font-semibold tracking-tight sm:text-5xl">Manager Outfit Generator</h1>
-              <p class="mt-3 max-w-2xl text-zinc-300">Pick a team, build summer/winter outfit variants, then download the Lua Engine installer script.</p>
-              <p class="mt-3 text-sm font-medium text-zinc-400">By Aykovic10™</p>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="block sm:col-span-2">
+            <span class="mb-2 block text-sm font-medium text-zinc-700">Season</span>
+            <div class="grid grid-cols-2 gap-3">
+              <button id="summerBtn" class="rounded-2xl border px-4 py-3 text-sm font-medium">☀ Summer</button>
+              <button id="winterBtn" class="rounded-2xl border px-4 py-3 text-sm font-medium">❄ Winter</button>
             </div>
-          </div>
-          <div class="flex flex-wrap gap-2 sm:justify-end">
-            <a href="https://buymeacoffee.com/570lns1kjb" target="_blank" rel="noopener noreferrer" class="rounded-2xl bg-[#40DCA5] px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:opacity-90">Buy Me a Coffee</a>
-            <a href="https://www.instagram.com/aykovic_10/" target="_blank" rel="noopener noreferrer" class="rounded-2xl border border-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10">Instagram</a>
-            <a href="https://twitter.com/Aykovic10FC25" target="_blank" rel="noopener noreferrer" class="rounded-2xl border border-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10">X</a>
+          </label>
+
+          <div id="topPicker" class="sm:col-span-2"></div>
+          <div id="bottomPicker" class="sm:col-span-2"></div>
+          <div id="shoePicker" class="sm:col-span-2"></div>
+        </div>
+
+        <div class="mt-5 rounded-2xl bg-zinc-50 p-4 text-sm text-zinc-700">
+          <div class="font-medium text-zinc-950">Detected values</div>
+          <div class="mt-2 grid gap-1 sm:grid-cols-2">
+            <div>Sleeve: <span id="detectedSleeve">—</span></div>
+            <div>Length: <span id="detectedLength">—</span></div>
+            <div>Socks: fixed 13/1</div>
+            <div>Season: <span id="detectedSeason">summer</span></div>
           </div>
         </div>
-      </header>
 
-      <div class="grid gap-6 lg:grid-cols-[1fr_420px]">
-        <section class="space-y-6">
-          <section class="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
-            <h2 class="mb-5 text-xl font-semibold">1. Choose team</h2>
-            <div id="teamStatus" class="mb-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600">Loading teams…</div>
-            <div class="mb-4 grid grid-cols-2 gap-3">
-              <button id="teamListBtn" class="rounded-2xl border px-4 py-3 text-sm font-medium">Team list</button>
-              <button id="customTeamBtn" class="rounded-2xl border px-4 py-3 text-sm font-medium">Custom ID</button>
-            </div>
-            <div id="teamListBox">
-              <label class="block">
-                <span class="mb-2 block text-sm font-medium text-zinc-700">Search team</span>
-                <input id="teamSearch" class="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400" placeholder="Search by team name or ID" />
-              </label>
-              <div id="teamResults" class="mt-3 max-h-72 overflow-auto rounded-2xl border border-zinc-200 bg-white p-2"></div>
-              <p class="mt-2 text-xs text-zinc-500">Showing up to 80 results. Use search for the full database.</p>
-            </div>
-            <div id="customTeamBox" class="hidden">
-              <label class="block">
-                <span class="mb-2 block text-sm font-medium text-zinc-700">Custom team ID</span>
-                <input id="customTeamInput" class="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400" placeholder="Type team ID, e.g. 240" />
-              </label>
-            </div>
-          </section>
+        <button id="addOutfitBtn" disabled class="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-zinc-300">＋ Add to summer</button>
+      </section>
 
-          <section class="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
-            <h2 class="mb-5 text-xl font-semibold">2. Build outfit</h2>
-            <div id="productStatus" class="mb-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600">Loading products…</div>
-
-            <div class="grid gap-4 sm:grid-cols-2">
-              <label class="block sm:col-span-2">
-                <span class="mb-2 block text-sm font-medium text-zinc-700">Season</span>
-                <div class="grid grid-cols-2 gap-3">
-                  <button id="summerBtn" class="rounded-2xl border px-4 py-3 text-sm font-medium">☀ Summer</button>
-                  <button id="winterBtn" class="rounded-2xl border px-4 py-3 text-sm font-medium">❄ Winter</button>
-                </div>
-              </label>
-
-              <div id="topPicker" class="sm:col-span-2"></div>
-              <div id="bottomPicker" class="sm:col-span-2"></div>
-              <div id="shoePicker" class="sm:col-span-2"></div>
-            </div>
-
-            <div class="mt-5 rounded-2xl bg-zinc-50 p-4 text-sm text-zinc-700">
-              <div class="font-medium text-zinc-950">Detected values</div>
-              <div class="mt-2 grid gap-1 sm:grid-cols-2">
-                <div>Sleeve: <span id="detectedSleeve">—</span></div>
-                <div>Length: <span id="detectedLength">—</span></div>
-                <div>Socks: fixed 13/1</div>
-                <div>Season: <span id="detectedSeason">summer</span></div>
-              </div>
-            </div>
-
-            <button id="addOutfitBtn" disabled class="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-zinc-300">＋ Add to summer</button>
-          </section>
-
-          <div class="grid gap-6 md:grid-cols-2">
-            <section class="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
-              <h3 class="mb-4 text-lg font-semibold">☀ Summer outfits</h3>
-              <div id="summerOutfits" class="space-y-3"><p class="text-sm text-zinc-500">No summer outfits yet.</p></div>
-            </section>
-            <section class="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
-              <h3 class="mb-4 text-lg font-semibold">❄ Winter outfits</h3>
-              <div id="winterOutfits" class="space-y-3"><p class="text-sm text-zinc-500">No winter outfits yet.</p></div>
-            </section>
-          </div>
+      <div class="grid gap-6 md:grid-cols-2">
+        <section class="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+          <h3 class="mb-4 text-lg font-semibold">☀ Summer outfits</h3>
+          <div id="summerOutfits" class="space-y-3"><p class="text-sm text-zinc-500">No summer outfits yet.</p></div>
         </section>
-
-        <aside class="space-y-6">
-          <section class="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
-            <h2 class="mb-4 text-xl font-semibold">3. Download scripts</h2>
-            <p class="mb-4 rounded-2xl bg-zinc-50 px-4 py-3 text-sm text-zinc-600">Target team ID: <span id="targetTeam" class="font-semibold text-zinc-900">—</span></p>
-            <div class="space-y-3">
-              <button id="downloadInstall" disabled class="flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-zinc-300">↓ Download Add / Update Script</button>
-              <button id="downloadResetTeam" class="flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-medium text-zinc-800">↻ Download Reset This Team</button>
-              <button id="downloadResetAll" class="flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-medium text-zinc-800">× Download Reset All</button>
-            </div>
-          </section>
-          <section class="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
-            <div class="mb-4 flex items-center gap-3">
-              <img src="https://cdn.buymeacoffee.com/uploads/profile_pictures/2024/05/e31c55d0bc66ff537c0e507db85699ff.png@300w_0e.webp" alt="Aykovic10" class="h-12 w-12 rounded-2xl border border-zinc-200 object-cover" />
-              <div>
-                <h2 class="text-xl font-semibold">By Aykovic10™</h2>
-                <p class="text-sm text-zinc-500">Studio Pass protected downloads</p>
-              </div>
-            </div>
-            <p class="text-sm leading-6 text-zinc-600">
-              The generator opens after Studio Pass verification. Lua files are generated securely during download.
-            </p>
-            <div class="mt-4 grid gap-2">
-              <a href="https://buymeacoffee.com/570lns1kjb" target="_blank" rel="noopener noreferrer" class="rounded-2xl bg-[#40DCA5] px-4 py-3 text-center text-sm font-semibold text-zinc-950 transition hover:opacity-90">Buy Me a Coffee</a>
-              <div class="grid grid-cols-2 gap-2">
-                <a href="https://www.instagram.com/aykovic_10/" target="_blank" rel="noopener noreferrer" class="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-center text-sm font-medium text-zinc-800 transition hover:bg-zinc-50">Instagram</a>
-                <a href="https://twitter.com/Aykovic10FC25" target="_blank" rel="noopener noreferrer" class="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-center text-sm font-medium text-zinc-800 transition hover:bg-zinc-50">X</a>
-              </div>
-            </div>
-          </section>
-          <section class="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
-            <button id="togglePreview" class="mb-4 flex w-full items-center justify-between rounded-2xl bg-zinc-50 px-4 py-3 text-left text-sm font-medium text-zinc-800 transition hover:bg-zinc-100">Lua preview <span>Show</span></button>
-            <pre id="luaPreview" class="hidden max-h-[520px] overflow-auto rounded-2xl bg-zinc-950 p-4 text-xs leading-relaxed text-zinc-100"></pre>
-          </section>
-        </aside>
+        <section class="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+          <h3 class="mb-4 text-lg font-semibold">❄ Winter outfits</h3>
+          <div id="winterOutfits" class="space-y-3"><p class="text-sm text-zinc-500">No winter outfits yet.</p></div>
+        </section>
       </div>
+    </section>
+
+    <aside class="space-y-6">
+      <section class="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+        <h2 class="mb-4 text-xl font-semibold">3. Download scripts</h2>
+        <p class="mb-4 rounded-2xl bg-zinc-50 px-4 py-3 text-sm text-zinc-600">Target team ID: <span id="targetTeam" class="font-semibold text-zinc-900">—</span></p>
+        <div class="space-y-3">
+          <button id="downloadInstall" disabled class="flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-zinc-300">↓ Download Add / Update Script</button>
+          <button id="downloadResetTeam" class="flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-medium text-zinc-800">↻ Download Reset This Team</button>
+          <button id="downloadResetAll" class="flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-medium text-zinc-800">× Download Reset All</button>
+        </div>
+      </section>
+      <section class="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+        <div class="mb-4 flex items-center gap-3">
+          <img src="https://cdn.buymeacoffee.com/uploads/profile_pictures/2024/05/e31c55d0bc66ff537c0e507db85699ff.png@300w_0e.webp" alt="Aykovic10" class="h-12 w-12 rounded-2xl border border-zinc-200 object-cover" />
+          <div>
+            <h2 class="text-xl font-semibold">By Aykovic10™</h2>
+            <p class="text-sm text-zinc-500">Studio Pass protected downloads</p>
+          </div>
+        </div>
+        <p class="text-sm leading-6 text-zinc-600">
+          The generator opens after Studio Pass verification. Lua files are generated securely during download.
+        </p>
+        <div class="mt-4 grid gap-2">
+          <a href="https://buymeacoffee.com/570lns1kjb" target="_blank" rel="noopener noreferrer" class="rounded-2xl bg-[#40DCA5] px-4 py-3 text-center text-sm font-semibold text-zinc-950 transition hover:opacity-90">Buy Me a Coffee</a>
+          <div class="grid grid-cols-2 gap-2">
+            <a href="https://www.instagram.com/aykovic_10/" target="_blank" rel="noopener noreferrer" class="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-center text-sm font-medium text-zinc-800 transition hover:bg-zinc-50">Instagram</a>
+            <a href="https://twitter.com/Aykovic10FC25" target="_blank" rel="noopener noreferrer" class="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-center text-sm font-medium text-zinc-800 transition hover:bg-zinc-50">X</a>
+          </div>
+        </div>
+      </section>
+      <section class="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+        <button id="togglePreview" class="mb-4 flex w-full items-center justify-between rounded-2xl bg-zinc-50 px-4 py-3 text-left text-sm font-medium text-zinc-800 transition hover:bg-zinc-100">Lua preview <span>Show</span></button>
+        <pre id="luaPreview" class="hidden max-h-[520px] overflow-auto rounded-2xl bg-zinc-950 p-4 text-xs leading-relaxed text-zinc-100"></pre>
+      </section>
+    </aside>
+  </div>
+</div>
+
+  <footer class="mt-8 rounded-3xl border border-zinc-200 bg-white p-5 text-center text-sm text-zinc-500 shadow-sm">
+    <div class="flex flex-col items-center justify-center gap-3 sm:flex-row">
+      <span>By Aykovic10™</span>
+      <span class="hidden text-zinc-300 sm:inline">•</span>
+      <a href="https://www.instagram.com/aykovic_10/" target="_blank" rel="noopener noreferrer" class="font-medium text-zinc-800 hover:underline">Instagram</a>
+      <span class="hidden text-zinc-300 sm:inline">•</span>
+      <a href="https://twitter.com/Aykovic10FC25" target="_blank" rel="noopener noreferrer" class="font-medium text-zinc-800 hover:underline">X</a>
+      <span class="hidden text-zinc-300 sm:inline">•</span>
+      <a href="https://buymeacoffee.com/570lns1kjb" target="_blank" rel="noopener noreferrer" class="font-medium text-zinc-800 hover:underline">Buy Me a Coffee</a>
     </div>
-
-      <footer class="mt-8 rounded-3xl border border-zinc-200 bg-white p-5 text-center text-sm text-zinc-500 shadow-sm">
-        <div class="flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <span>By Aykovic10™</span>
-          <span class="hidden text-zinc-300 sm:inline">•</span>
-          <a href="https://www.instagram.com/aykovic_10/" target="_blank" rel="noopener noreferrer" class="font-medium text-zinc-800 hover:underline">Instagram</a>
-          <span class="hidden text-zinc-300 sm:inline">•</span>
-          <a href="https://twitter.com/Aykovic10FC25" target="_blank" rel="noopener noreferrer" class="font-medium text-zinc-800 hover:underline">X</a>
-          <span class="hidden text-zinc-300 sm:inline">•</span>
-          <a href="https://buymeacoffee.com/570lns1kjb" target="_blank" rel="noopener noreferrer" class="font-medium text-zinc-800 hover:underline">Buy Me a Coffee</a>
-        </div>
-      </footer>
-  </main>
-
-<script>
-const TEAMS_CSV_URL = "https://docs.google.com/spreadsheets/d/1vV96ejjN3QLqSGPpINSiZBrWPddbI3ZOdY_Z8PO4zKI/export?format=csv&gid=0";
-const MEMBERS_CSV_URL = "https://docs.google.com/spreadsheets/d/1c5FAK1GhBC9Cym0QrPumUhuBh6Bv56LClU-wDSfRKos/export?format=csv&gid=0";
-const TOPS_CSV_URL = "https://docs.google.com/spreadsheets/d/1ZUNZ7N5aOrTln8HeSeQgCsn3PJcUCxdMDsuHNj05Jgc/export?format=csv&gid=0";
-const BOTTOMS_CSV_URL = "https://docs.google.com/spreadsheets/d/1ZUNZ7N5aOrTln8HeSeQgCsn3PJcUCxdMDsuHNj05Jgc/export?format=csv&gid=1560003768";
-const SHOES_CSV_URL = "https://docs.google.com/spreadsheets/d/1ZUNZ7N5aOrTln8HeSeQgCsn3PJcUCxdMDsuHNj05Jgc/export?format=csv&gid=1252043499";
-const DOWNLOAD_WORKER_URL = "https://fc26.aykkeork.workers.dev/";
-
-const PRODUCTS_FALLBACK = [];
-const FIXED_SOCKS = { length: 13, style: 1 };
-const FIXED_TOP0 = { id: 0, class: 1, var: 0, recolor: 0 };
-
-let teams = [{id:240,name:"Team 240"},{id:73,name:"Team 73"}];
-let products = { top: [], bottom: [], shoe: [] };
-let selected = { top: null, bottom: null, shoe: null };
-let selectedTeamId = 240;
-let teamMode = "list";
-let season = "summer";
-let summerOutfits = [];
-let winterOutfits = [];
-let validatedStudioPassEmail = "";
-
-function el(id){ return document.getElementById(id); }
-function cls(active){ return active ? "border-zinc-950 bg-zinc-950 text-white" : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"; }
-function pill(active){ return active ? "border-zinc-950 bg-zinc-950 text-white" : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100"; }
-
-function parseCsv(text){
-  const rows=[]; let row=[], cell="", q=false;
-  for(let i=0;i<text.length;i++){
-    const c=text[i], n=text[i+1];
-    if(c=='"' && q && n=='"'){ cell+='"'; i++; }
-    else if(c=='"'){ q=!q; }
-    else if(c=="," && !q){ row.push(cell); cell=""; }
-    else if((c=="\n"||c=="\r")&&!q){ if(c=="\r"&&n=="\n") i++; row.push(cell); if(row.some(v=>v.trim()!=="")) rows.push(row); row=[]; cell=""; }
-    else cell+=c;
-  }
-  row.push(cell); if(row.some(v=>v.trim()!=="")) rows.push(row);
-  return rows;
-}
-function rowsToObjects(csv){
-  const rows=parseCsv(csv); if(rows.length<2) return [];
-  const headers=rows[0].map(h=>h.trim());
-  return rows.slice(1).map(r=>Object.fromEntries(headers.map((h,i)=>[h,r[i]??""])));
-}
-function num(v,f=0){ const n=Number(String(v??"").trim()); return Number.isFinite(n)?n:f; }
-function disabled(v){ const s=String(v??"TRUE").trim().toLowerCase(); return ["false","0","no"].includes(s); }
-function key(s){ return String(s).replace(/[^a-zA-Z0-9_]+/g,"_").toLowerCase(); }
-
-function normTeam(r){
-  const id=num(r["Team ID"] ?? r.TeamID ?? r.id, NaN);
-  const name=String(r["Team Name"] ?? r.TeamName ?? r.name ?? "").trim();
-  return Number.isFinite(id)&&name ? {id,name} : null;
-}
-function normTop(r,i){
-  if(disabled(r.Enabled)) return null;
-  const name=String(r.Name??"").trim(), brand=String(r.Brand??"").trim(), category=String(r.Category??"").trim(), color=String(r.Color??"Default").trim();
-  if(!name||!brand||!category) return null;
-  return {key:key(`top_${brand}_${category}_${name}_${color}_${i}`),brand,category,product:name,name,color,image:String(r.Image||"https://placehold.co/400x400?text=Top").trim(),id:num(r.ID),var:num(r.var??r.Var),class:1,recolor:0,sleeve:num(r.Sleeve),productType:"top"};
-}
-function normBottom(r,i){
-  if(disabled(r.Enabled)) return null;
-  const name=String(r.Name??"").trim(), brand=String(r.Brand??"").trim(), category=String(r.Category??"").trim(), color=String(r.Color??"Default").trim();
-  if(!name||!brand||!category) return null;
-  return {key:key(`bottom_${brand}_${category}_${name}_${color}_${i}`),brand,category,product:name,name,color,image:String(r.Image||"https://placehold.co/400x400?text=Bottom").trim(),id:num(r.ID),var:num(r.var??r.Var),class:1,recolor:0,pants:num(r.Length),productType:"bottom"};
-}
-function normShoe(r,i){
-  if(disabled(r.Enabled)) return null;
-  const name=String(r.Name??"").trim(), brand=String(r.Brand??"").trim(), color=String(r.Color??"Default").trim();
-  if(!name||!brand) return null;
-  return {key:key(`shoe_${brand}_${name}_${color}_${i}`),brand,category:"Shoes",product:name,name,color,image:String(r.Image||"https://placehold.co/400x400?text=Shoe").trim(),type:num(r.Type),design:num(r.Design),productType:"shoe"};
-}
-
-function csvToProductsByKind(csv, kind){
-  return rowsToObjects(csv).map((r,i)=>{
-    if(kind==="top") return normTop(r,i);
-    if(kind==="bottom") return normBottom(r,i);
-    if(kind==="shoe") return normShoe(r,i);
-    return null;
-  }).filter(Boolean);
-}
-
-function gvizUrl(url){
-  const m=url.match(/\/spreadsheets\/d\/([^/]+)/);
-  const gid=(url.match(/[?&]gid=([^&]+)/)||[])[1] || "0";
-  return m ? `https://docs.google.com/spreadsheets/d/${m[1]}/gviz/tq?tqx=out:csv&gid=${gid}` : url;
-}
-
-async function loadCsv(url){
-  const urls=[url, gvizUrl(url)];
-  let lastErr;
-  for(const u of [...new Set(urls)]){
-    try{
-      const r=await fetch(u);
-      if(!r.ok) throw new Error(`HTTP ${r.status}`);
-      const text=await r.text();
-      if(text.includes("<!DOCTYPE html") || text.includes("<html")) throw new Error("Google returned HTML/login page instead of CSV");
-      return text;
-    }catch(e){ lastErr=e; }
-  }
-  throw lastErr || new Error("Could not load CSV");
-}
-
-function unique(arr, field){ return [...new Set(arr.map(x=>x[field]).filter(Boolean))]; }
-
-function renderTeams(){
-  const q=el("teamSearch").value.trim().toLowerCase();
-  const list=teams.filter(t=>!q||String(t.id).includes(q)||t.name.toLowerCase().includes(q)).slice(0,80);
-  el("teamResults").innerHTML = list.length ? list.map(t=>`
-    <button class="team-row mb-1 flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition last:mb-0 ${String(t.id)===String(selectedTeamId)?"bg-zinc-950 text-white":"text-zinc-700 hover:bg-zinc-100"}" data-id="${t.id}">
-      <span>${t.name}</span><span class="${String(t.id)===String(selectedTeamId)?"text-zinc-300":"text-zinc-400"}">${t.id}</span>
-    </button>`).join("") : `<div class="px-3 py-4 text-sm text-zinc-500">No teams found.</div>`;
-  document.querySelectorAll(".team-row").forEach(b=>b.onclick=()=>{selectedTeamId=Number(b.dataset.id); updateAll();});
-}
-
-function pickerHTML(kind,label){
-  const items=products[kind]||[];
-  const brands=unique(items,"brand");
-  const sel=selected[kind];
-  return `
-    <div class="mb-3 flex items-center justify-between gap-3">
-      <span class="text-sm font-medium text-zinc-700">${label}</span>
-      ${sel ? `<button class="clear-selection rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-600 hover:bg-zinc-200" data-kind="${kind}">${sel.brand} · ${sel.product} · ${sel.color} ×</button>` : `<span class="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-500">Not selected</span>`}
-    </div>
-    <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-      <div class="flex gap-2 overflow-x-auto pb-1">
-        ${brands.length ? brands.map(brand=>`<button class="brand-btn shrink-0 rounded-2xl border px-4 py-2 text-sm font-medium ${pill(window[kind+"Brand"]===brand)}" data-kind="${kind}" data-brand="${brand}">${brand}</button>`).join("") : `<div class="text-sm text-zinc-500">No ${label.toLowerCase()} loaded.</div>`}
-      </div>
-      <div id="${kind}Steps"></div>
-    </div>`;
-}
-
-function renderPicker(kind,label){
-  const box=el(kind==="top"?"topPicker":kind==="bottom"?"bottomPicker":"shoePicker");
-  box.innerHTML=pickerHTML(kind,label);
-  renderSteps(kind);
-  box.querySelectorAll(".brand-btn").forEach(b=>b.onclick=()=>toggleBrand(b.dataset.kind,b.dataset.brand));
-  box.querySelectorAll(".clear-selection").forEach(b=>b.onclick=()=>clearKind(b.dataset.kind));
-}
-
-function renderSteps(kind){
-  const step=el(`${kind}Steps`);
-  if(!step) return;
-  const items=products[kind]||[], brand=window[kind+"Brand"], cat=window[kind+"Category"], prod=window[kind+"Product"];
-  if(!brand){ step.innerHTML=""; return; }
-  const brandItems=items.filter(x=>x.brand===brand);
-  const skipCat=kind==="shoe";
-  let html="";
-  if(!skipCat){
-    html += `<div class="mt-4 flex gap-2 overflow-x-auto pb-1">${unique(brandItems,"category").map(c=>`<button class="cat-btn shrink-0 rounded-2xl border px-4 py-2 text-sm ${pill(cat===c)}" data-kind="${kind}" data-cat="${c}">${c}</button>`).join("")}</div>`;
-  }
-  const categoryItems=skipCat ? brandItems : (cat ? brandItems.filter(x=>x.category===cat) : []);
-  if(skipCat || cat){
-    const productsList=unique(categoryItems,"product").map(p=>categoryItems.find(x=>x.product===p));
-    html += `<div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">${productsList.map(item=>{
-      const displayItem = selected[kind]?.product === item.product ? selected[kind] : item;
-      return `
-      <button class="prod-btn overflow-hidden rounded-2xl border bg-white text-left shadow-sm hover:shadow-md ${prod===item.product?"border-zinc-950 ring-2 ring-zinc-950":"border-zinc-200"}" data-kind="${kind}" data-prod="${item.product}">
-        <div class="relative aspect-square bg-zinc-100">
-          <img src="${displayItem.image}" alt="${displayItem.name}" class="h-full w-full object-cover" />
-          <span class="zoom-btn pointer-events-auto absolute bottom-2 right-2 rounded-xl bg-white/90 px-3 py-1 text-xs font-semibold text-zinc-950 shadow-sm transition hover:bg-white" data-image="${displayItem.image}" data-name="${displayItem.name}">Zoom</span>
-        </div>
-        <div class="p-3">
-          <div class="line-clamp-2 text-sm font-medium text-zinc-900">${displayItem.product}</div>
-          <div class="mt-1 text-xs text-zinc-500">${displayItem.name}</div>
-          <div class="mt-1 text-xs font-medium text-zinc-700">${displayItem.color}</div>
-          <div class="mt-2 text-[11px] text-zinc-500">${kind==="top"?"Sleeve: "+displayItem.sleeve:kind==="bottom"?"Length: "+displayItem.pants:"Type: "+displayItem.type}</div>
-        </div>
-      </button>`;
-    }).join("")}</div>`;
-  }
-  if(prod){
-    const colors=categoryItems.filter(x=>x.product===prod);
-    html += `<div class="mt-4 rounded-2xl bg-white p-3"><div class="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">Color</div><div class="flex flex-wrap gap-2">${colors.map(item=>`
-      <button class="color-btn flex items-center gap-2 rounded-2xl border px-3 py-2 text-sm ${selected[kind]?.key===item.key?"border-zinc-950 bg-zinc-950 text-white":"border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"}" data-kind="${kind}" data-key="${item.key}">
-        <img src="${item.image}" alt="${item.color}" class="h-6 w-6 rounded-full object-cover" />
-        <span>${item.color}</span>
-      </button>`).join("")}</div></div>`;
-  }
-  step.innerHTML=html;
-  step.querySelectorAll(".cat-btn").forEach(b=>b.onclick=()=>toggleCategory(b.dataset.kind,b.dataset.cat));
-  step.querySelectorAll(".prod-btn").forEach(b=>b.onclick=()=>toggleProduct(b.dataset.kind,b.dataset.prod));
-  step.querySelectorAll(".color-btn").forEach(b=>b.onclick=()=>selectColor(b.dataset.kind,b.dataset.key));
-  step.querySelectorAll(".zoom-btn").forEach(b=>b.onclick=(event)=>{ event.stopPropagation(); openImageZoom(b.dataset.image, b.dataset.name); });
-}
-
-function toggleBrand(kind, brand){
-  if(window[kind+"Brand"]===brand){ clearKind(kind); return; }
-  window[kind+"Brand"]=brand; window[kind+"Category"]=null; window[kind+"Product"]=null; selected[kind]=null; updateAll();
-}
-function toggleCategory(kind, cat){
-  if(window[kind+"Category"]===cat){ window[kind+"Category"]=null; window[kind+"Product"]=null; selected[kind]=null; updateAll(); return; }
-  window[kind+"Category"]=cat; window[kind+"Product"]=null; selected[kind]=null; updateAll();
-}
-function toggleProduct(kind, prod){
-  if(window[kind+"Product"]===prod){ window[kind+"Product"]=null; selected[kind]=null; updateAll(); return; }
-  window[kind+"Product"]=prod;
-  const items=products[kind].filter(x=>x.brand===window[kind+"Brand"] && (kind==="shoe"||x.category===window[kind+"Category"]) && x.product===prod);
-  selected[kind]=items[0]||null; updateAll();
-}
-function selectColor(kind, keyv){ selected[kind]=products[kind].find(x=>x.key===keyv)||null; updateAll(); }
-function clearKind(kind){ window[kind+"Brand"]=null; window[kind+"Category"]=null; window[kind+"Product"]=null; selected[kind]=null; updateAll(); }
-
-function currentOutfit(){
-  if(!selected.top||!selected.bottom||!selected.shoe) return null;
-  return {
-    sleeve:selected.top.sleeve, pants:selected.bottom.pants, top0:FIXED_TOP0,
-    top1:{id:selected.top.id,class:1,var:selected.top.var,recolor:0},
-    bottom:{id:selected.bottom.id,class:1,var:selected.bottom.var,recolor:0},
-    socks:FIXED_SOCKS,
-    shoes:{type:selected.shoe.type,design:selected.shoe.design}
-  };
-}
-function card(outfit,i,seasonName){
-  return `<div class="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"><div class="mb-2 flex items-center justify-between"><b>Outfit ${i+1}</b><button class="remove-outfit rounded-xl p-2 text-zinc-500 hover:bg-zinc-100" data-season="${seasonName}" data-index="${i}">×</button></div><div class="grid gap-1 text-xs text-zinc-600"><div>Top: ${outfit.top1.id} / var ${outfit.top1.var} / sleeve ${outfit.sleeve}</div><div>Bottom: ${outfit.bottom.id} / var ${outfit.bottom.var} / length ${outfit.pants}</div><div>Shoes: ${outfit.shoes.type} / design ${outfit.shoes.design}</div></div></div>`;
-}
-function renderOutfits(){
-  el("summerOutfits").innerHTML=summerOutfits.length?summerOutfits.map((o,i)=>card(o,i,"summer")).join(""):`<p class="text-sm text-zinc-500">No summer outfits yet.</p>`;
-  el("winterOutfits").innerHTML=winterOutfits.length?winterOutfits.map((o,i)=>card(o,i,"winter")).join(""):`<p class="text-sm text-zinc-500">No winter outfits yet.</p>`;
-  document.querySelectorAll(".remove-outfit").forEach(b=>b.onclick=()=>{ const arr=b.dataset.season==="summer"?summerOutfits:winterOutfits; arr.splice(Number(b.dataset.index),1); updateAll();});
-}
-
-
-function downloadBlobFromResponse(response, fallbackName){
-  return response.blob().then((blob)=>{
-    const disposition = response.headers.get("Content-Disposition") || "";
-    const match = disposition.match(/filename="?([^"]+)"?/i);
-    const filename = match ? match[1] : fallbackName;
-
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    a.click();
-    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-  });
-}
-
-
-function luaPreviewValue(v, level=0){
-  const ind="    ".repeat(level);
-  if(typeof v==="number") return String(v);
-  if(typeof v==="string") return JSON.stringify(v);
-  if(Array.isArray(v)) return `{\n${v.map(x=>"    ".repeat(level+1)+luaPreviewValue(x,level+1)+",").join("\n")}\n${ind}}`;
-  if(v&&typeof v==="object") return `{\n${Object.entries(v).map(([k,val])=>"    ".repeat(level+1)+k+" = "+luaPreviewValue(val,level+1)+",").join("\n")}\n${ind}}`;
-  return "nil";
-}
-function luaPreviewOutfit(o,level=4){
-  return `{\n${"    ".repeat(level)}sleeve = ${o.sleeve},\n${"    ".repeat(level)}pants = ${o.pants},\n${"    ".repeat(level)}top0   = ${luaPreviewValue(o.top0,level)},\n${"    ".repeat(level)}top1   = ${luaPreviewValue(o.top1,level)},\n${"    ".repeat(level)}bottom = ${luaPreviewValue(o.bottom,level)},\n${"    ".repeat(level)}socks  = ${luaPreviewValue(o.socks,level)},\n${"    ".repeat(level)}shoes  = ${luaPreviewValue(o.shoes,level)},\n${"    ".repeat(level-1)}}`;
-}
-function luaPreviewSeason(arr,level=3){
-  if(!arr.length) return "{}";
-  return `{\n${arr.map(o=>"    ".repeat(level)+luaPreviewOutfit(o,level+1)+",").join("\n")}\n${"    ".repeat(level-1)}}`;
-}
-function luaPreviewNormalized(){
-  if(summerOutfits.length&&!winterOutfits.length) return {summer:summerOutfits,winter:summerOutfits};
-  if(winterOutfits.length&&!summerOutfits.length) return {summer:winterOutfits,winter:winterOutfits};
-  return {summer:summerOutfits,winter:winterOutfits};
-}
-function generateLuaPreview(teamId){
-  const n=luaPreviewNormalized();
-  return `-- Preview only. Actual download is generated securely after Studio Pass verification.\nreturn {\n    [${teamId}] = {\n        summer = ${luaPreviewSeason(n.summer,3)},\n\n        winter = ${luaPreviewSeason(n.winter,3)},\n    },\n}\n`;
-}
-
-
-function openImageZoom(imageUrl, imageName){
-  const modal = el("imageZoomModal");
-  const img = el("imageZoomImg");
-  if(!modal || !img || !imageUrl) return;
-
-  img.src = imageUrl;
-  img.alt = imageName || "Product preview";
-  modal.classList.remove("hidden");
-  modal.classList.add("flex");
-}
-
-function closeImageZoom(){
-  const modal = el("imageZoomModal");
-  const img = el("imageZoomImg");
-  if(!modal || !img) return;
-
-  modal.classList.add("hidden");
-  modal.classList.remove("flex");
-  img.src = "";
-}
-
-function updateAll(){
-  el("teamListBtn").className=`rounded-2xl border px-4 py-3 text-sm font-medium ${cls(teamMode==="list")}`;
-  el("customTeamBtn").className=`rounded-2xl border px-4 py-3 text-sm font-medium ${cls(teamMode==="custom")}`;
-  el("teamListBox").classList.toggle("hidden", teamMode!=="list");
-  el("customTeamBox").classList.toggle("hidden", teamMode!=="custom");
-  renderTeams();
-  renderPicker("top","Top");
-  renderPicker("bottom","Bottom");
-  renderPicker("shoe","Shoes");
-  el("summerBtn").className=`rounded-2xl border px-4 py-3 text-sm font-medium ${cls(season==="summer")}`;
-  el("winterBtn").className=`rounded-2xl border px-4 py-3 text-sm font-medium ${cls(season==="winter")}`;
-  el("detectedSeason").textContent=season;
-  const outfit=currentOutfit();
-  el("detectedSleeve").textContent=outfit?outfit.sleeve:"—";
-  el("detectedLength").textContent=outfit?outfit.pants:"—";
-  el("addOutfitBtn").disabled=!outfit;
-  el("addOutfitBtn").innerHTML=`＋ Add to ${season}`;
-  renderOutfits();
-  const team = teamMode==="custom" ? Number(el("customTeamInput").value) : Number(selectedTeamId);
-  const validTeam = Number.isFinite(team) && team>0;
-  el("targetTeam").textContent=validTeam?team:"—";
-  el("downloadInstall").disabled=!(validTeam&&(summerOutfits.length||winterOutfits.length));
-  if(el("luaPreview")) el("luaPreview").textContent=generateLuaPreview(validTeam?team:0);
-}
-
-function normalizeEmail(value){
-  return String(value || "").trim().toLowerCase();
-}
-
-async function verifyStudioPass(email){
-  if(!DOWNLOAD_WORKER_URL){
-    throw new Error("Download backend is not connected yet. Paste your Cloudflare Worker URL into DOWNLOAD_WORKER_URL.");
-  }
-
-  const response = await fetch(DOWNLOAD_WORKER_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: "validate",
-      email,
-    }),
-  });
-
-  if(!response.ok){
-    const message = await response.text();
-    throw new Error(message || "Access denied. Studio Pass required.");
-  }
-
-  return true;
-}
-
-function setupMemberGate(){
-  const overlay = el("memberOverlay");
-  const mainApp = el("mainApp");
-  const input = el("memberEmailInput");
-  const button = el("memberCheckBtn");
-  const status = el("memberStatus");
-
-  if(!overlay || !mainApp || !input || !button || !status) return;
-
-  const tryAccess = async () => {
-    const email = normalizeEmail(input.value);
-
-    if(!email || !email.includes("@")){
-      status.textContent = "Please enter a valid email.";
-      status.className = "mt-4 min-h-5 text-sm text-red-600";
-      return;
-    }
-
-    button.disabled = true;
-    status.textContent = "Checking Studio Pass…";
-    status.className = "mt-4 min-h-5 text-sm text-zinc-500";
-
-    try{
-      await verifyStudioPass(email);
-      validatedStudioPassEmail = email;
-      overlay.classList.add("hidden");
-      mainApp.classList.remove("hidden");
-      status.textContent = "";
-    }catch(error){
-      status.textContent = error.message || "Access denied. Studio Pass required.";
-      status.className = "mt-4 min-h-5 text-sm text-red-600";
-    }finally{
-      button.disabled = false;
-    }
-  };
-
-  button.onclick = tryAccess;
-  input.addEventListener("keydown", (event) => {
-    if(event.key === "Enter") tryAccess();
-  });
-
-  setTimeout(() => input.focus(), 100);
-}
-
-function getActiveTeamId(){
-  return teamMode === "custom" ? Number(el("customTeamInput").value) : Number(selectedTeamId);
-}
-
-async function requestProtectedDownload(scriptType){
-  if(!validatedStudioPassEmail){
-    alert("Please verify your Studio Pass email first.");
-    return;
-  }
-
-  if(!DOWNLOAD_WORKER_URL){
-    alert("Download backend is not connected yet. Paste your Cloudflare Worker URL into DOWNLOAD_WORKER_URL.");
-    return;
-  }
-
-  const team = getActiveTeamId();
-
-  if(scriptType !== "resetAll" && (!Number.isFinite(team) || team <= 0)){
-    alert("Choose a valid team first.");
-    return;
-  }
-
-  if(scriptType === "install" && !(summerOutfits.length || winterOutfits.length)){
-    alert("Add at least one outfit first.");
-    return;
-  }
-
-  const payload = {
-    action: "download",
-    email: validatedStudioPassEmail,
-    scriptType,
-    teamId: team,
-    summerOutfits,
-    winterOutfits,
-  };
-
-  try{
-    const response = await fetch(DOWNLOAD_WORKER_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if(!response.ok){
-      const message = await response.text();
-      throw new Error(message || "Download failed.");
-    }
-
-    const fallbackName = scriptType === "resetAll"
-      ? "reset_all_manager_outfits.lua"
-      : scriptType === "resetTeam"
-        ? `reset_manager_outfit_team_${team}.lua`
-        : `install_manager_outfit_team_${team}.lua`;
-
-    await downloadBlobFromResponse(response, fallbackName);
-  }catch(error){
-    alert(error.message || "Download failed.");
-  }
-}
-
-async function init(){
-  if(el("imageZoomClose")) el("imageZoomClose").onclick=closeImageZoom;
-  if(el("imageZoomModal")) el("imageZoomModal").onclick=(event)=>{ if(event.target.id==="imageZoomModal") closeImageZoom(); };
-  document.addEventListener("keydown", (event)=>{ if(event.key==="Escape") closeImageZoom(); });
-  setupMemberGate();
-  el("teamListBtn").onclick=()=>{teamMode="list";updateAll();};
-  el("customTeamBtn").onclick=()=>{teamMode="custom";updateAll();};
-  el("teamSearch").oninput=renderTeams;
-  el("customTeamInput").oninput=e=>{e.target.value=e.target.value.replace(/[^0-9]/g,"");updateAll();};
-  el("summerBtn").onclick=()=>{season="summer";updateAll();};
-  el("winterBtn").onclick=()=>{season="winter";updateAll();};
-  el("addOutfitBtn").onclick=()=>{ const o=currentOutfit(); if(!o)return; (season==="summer"?summerOutfits:winterOutfits).push(o); updateAll(); };
-  el("downloadInstall").onclick=()=>requestProtectedDownload("install");
-  el("downloadResetTeam").onclick=()=>requestProtectedDownload("resetTeam");
-  el("downloadResetAll").onclick=()=>requestProtectedDownload("resetAll");
-  if(el("togglePreview")) el("togglePreview").onclick=()=>{ const p=el("luaPreview"); p.classList.toggle("hidden"); el("togglePreview").querySelector("span").textContent=p.classList.contains("hidden")?"Show":"Hide"; };
-
-  updateAll();
-
-  try{
-    teams=(await loadCsv(TEAMS_CSV_URL).then(rowsToObjects)).map(normTeam).filter(Boolean);
-    if(teams.length) { selectedTeamId=teams[0].id; el("teamStatus").textContent=`Loaded ${teams.length} teams from Google Sheet.`; el("teamStatus").className="mb-4 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-900"; }
-  }catch(e){ el("teamStatus").textContent="Team sheet could not be loaded. Make sure it is shared publicly or published to web. Fallback teams are shown."; el("teamStatus").className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"; }
-
-  try{
-    const [tops,bottoms,shoes]=await Promise.all([
-      loadCsv(TOPS_CSV_URL).then(t=>csvToProductsByKind(t,"top")),
-      loadCsv(BOTTOMS_CSV_URL).then(t=>csvToProductsByKind(t,"bottom")),
-      loadCsv(SHOES_CSV_URL).then(t=>csvToProductsByKind(t,"shoe")),
-    ]);
-    products={top:tops,bottom:bottoms,shoe:shoes};
-    el("productStatus").textContent=`Loaded ${tops.length} tops, ${bottoms.length} bottoms, and ${shoes.length} shoes from Google Sheets.`; el("productStatus").className="mb-4 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-900";
-  }catch(e){
-    products={
-      top:PRODUCTS_FALLBACK.filter(x=>x.productType==="top"),
-      bottom:PRODUCTS_FALLBACK.filter(x=>x.productType==="bottom"),
-      shoe:PRODUCTS_FALLBACK.filter(x=>x.productType==="shoe"),
-    };
-    el("productStatus").textContent="Product sheet could not be loaded, so fallback products are being shown.";
-    el("productStatus").className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900";
-  }
-  updateAll();
-}
-init();
-</script>
-
-  <script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="570lNS1kJB" data-description="Support me on Buy me a coffee!" data-message="" data-color="#40DCA5" data-position="Right" data-x_margin="18" data-y_margin="18"></script>
-</body>
-</html>
+  </footer>
