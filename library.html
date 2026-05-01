@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FC26 Product Library Preview</title>
+  <link rel="icon" href="https://cdn.buymeacoffee.com/uploads/profile_pictures/2024/05/e31c55d0bc66ff537c0e507db85699ff.png@300w_0e.webp" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-zinc-50 text-zinc-950">
+  <div id="imageZoomModal" class="fixed inset-0 z-[9998] hidden items-center justify-center bg-zinc-950/90 px-4 py-6 backdrop-blur-sm">
+    <div class="relative w-full max-w-4xl">
+      <button id="imageZoomClose" type="button" class="absolute right-3 top-3 z-10 rounded-2xl bg-white/90 px-4 py-2 text-sm font-semibold text-zinc-950 shadow-sm transition hover:bg-white">Close ×</button>
+      <div class="overflow-hidden rounded-3xl border border-white/10 bg-white p-3 shadow-2xl">
+        <img id="imageZoomImg" src="" alt="Product preview" class="max-h-[82vh] w-full rounded-2xl object-contain" />
+      </div>
+    </div>
+  </div>
+
+  <main class="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-7xl">
+      <header class="mb-8 rounded-3xl bg-zinc-950 p-6 text-white shadow-sm sm:p-8">
+        <div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex items-center gap-4">
+            <img src="https://cdn.buymeacoffee.com/uploads/profile_pictures/2024/05/e31c55d0bc66ff537c0e507db85699ff.png@300w_0e.webp" alt="Aykovic10" class="h-16 w-16 rounded-2xl border border-white/10 object-cover shadow-sm" />
+            <div>
+              <p class="mb-2 text-sm uppercase tracking-[0.2em] text-zinc-400">FC26 Studio Pass</p>
+              <h1 class="text-3xl font-semibold tracking-tight sm:text-5xl">Product Library Preview</h1>
+              <p class="mt-3 max-w-2xl text-zinc-300">Browse available tops, bottoms, and shoes before opening the manager outfit generator.</p>
+              <p class="mt-3 text-sm font-medium text-zinc-400">By Aykovic10™</p>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-2 sm:justify-end">
+            <a href="index.html" class="rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-zinc-100">Back to Generator</a>
+            <a href="https://buymeacoffee.com/570lns1kjb/membership" target="_blank" rel="noopener noreferrer" class="rounded-2xl bg-[#40DCA5] px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:opacity-90">Get Membership</a>
+          </div>
+        </div>
+      </header>
+
+      <section class="mb-6 rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+        <div class="grid gap-4 lg:grid-cols-[1fr_260px] lg:items-end">
+          <div>
+            <h2 class="text-xl font-semibold">Browse library</h2>
+            <p class="mt-2 text-sm leading-6 text-zinc-600">Preview-only product list loaded from the same Google Sheets as the generator.</p>
+          </div>
+          <label class="block">
+            <span class="mb-2 block text-sm font-medium text-zinc-700">Search products</span>
+            <input id="librarySearch" class="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-zinc-400" placeholder="Search brand, name, color..." />
+          </label>
+        </div>
+
+        <div class="mt-5 grid gap-3 sm:grid-cols-4">
+          <button id="filterAll" class="rounded-2xl border px-4 py-3 text-sm font-medium">All</button>
+          <button id="filterTop" class="rounded-2xl border px-4 py-3 text-sm font-medium">Tops</button>
+          <button id="filterBottom" class="rounded-2xl border px-4 py-3 text-sm font-medium">Bottoms</button>
+          <button id="filterShoe" class="rounded-2xl border px-4 py-3 text-sm font-medium">Shoes</button>
+        </div>
+      </section>
+
+      <div id="libraryStatus" class="mb-6 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600">Loading product library…</div>
+      <section id="libraryContent" class="space-y-8"></section>
+
+      <footer class="mt-8 rounded-3xl border border-zinc-200 bg-white p-5 text-center text-sm text-zinc-500 shadow-sm">
+        <div class="flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <span>By Aykovic10™</span>
+          <span class="hidden text-zinc-300 sm:inline">•</span>
+          <a href="https://www.instagram.com/aykovic_10/" target="_blank" rel="noopener noreferrer" class="font-medium text-zinc-800 hover:underline">Instagram</a>
+          <span class="hidden text-zinc-300 sm:inline">•</span>
+          <a href="https://twitter.com/Aykovic10FC25" target="_blank" rel="noopener noreferrer" class="font-medium text-zinc-800 hover:underline">X</a>
+          <span class="hidden text-zinc-300 sm:inline">•</span>
+          <a href="https://buymeacoffee.com/570lns1kjb" target="_blank" rel="noopener noreferrer" class="font-medium text-zinc-800 hover:underline">Buy Me a Coffee</a>
+        </div>
+      </footer>
+    </div>
+  </main>
+
+<script>
+const TOPS_CSV_URL = "https://docs.google.com/spreadsheets/d/1ZUNZ7N5aOrTln8HeSeQgCsn3PJcUCxdMDsuHNj05Jgc/export?format=csv&gid=0";
+const BOTTOMS_CSV_URL = "https://docs.google.com/spreadsheets/d/1ZUNZ7N5aOrTln8HeSeQgCsn3PJcUCxdMDsuHNj05Jgc/export?format=csv&gid=1560003768";
+const SHOES_CSV_URL = "https://docs.google.com/spreadsheets/d/1ZUNZ7N5aOrTln8HeSeQgCsn3PJcUCxdMDsuHNj05Jgc/export?format=csv&gid=1252043499";
+
+let products = { top: [], bottom: [], shoe: [] };
+let activeFilter = "all";
+
+function el(id){ return document.getElementById(id); }
+function cls(active){ return active ? "border-zinc-950 bg-zinc-950 text-white" : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"; }
+
+function parseCsv(text){
+  const rows=[]; let row=[], cell="", q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i], n=text[i+1];
+    if(c=='"' && q && n=='"'){ cell+='"'; i++; }
+    else if(c=='"'){ q=!q; }
+    else if(c=="," && !q){ row.push(cell); cell=""; }
+    else if((c=="\n"||c=="\r")&&!q){ if(c=="\r"&&n=="\n") i++; row.push(cell); if(row.some(v=>v.trim()!=="")) rows.push(row); row=[]; cell=""; }
+    else cell+=c;
+  }
+  row.push(cell); if(row.some(v=>v.trim()!=="")) rows.push(row);
+  return rows;
+}
+function rowsToObjects(csv){
+  const rows=parseCsv(csv); if(rows.length<2) return [];
+  const headers=rows[0].map(h=>h.trim());
+  return rows.slice(1).map(r=>Object.fromEntries(headers.map((h,i)=>[h,r[i]??""])));
+}
+function num(v,f=0){ const n=Number(String(v??"").trim()); return Number.isFinite(n)?n:f; }
+function disabled(v){ const s=String(v??"TRUE").trim().toLowerCase(); return ["false","0","no"].includes(s); }
+
+function normTop(r){
+  if(disabled(r.Enabled)) return null;
+  const name=String(r.Name??"").trim(), brand=String(r.Brand??"").trim(), category=String(r.Category??"").trim(), color=String(r.Color??"Default").trim();
+  if(!name||!brand||!category) return null;
+  return {kind:"top", brand, category, name, color, image:String(r.Image||"https://placehold.co/400x400?text=Top").trim(), detail:`Sleeve ${num(r.Sleeve)} · ID ${num(r.ID)} · Var ${num(r.var??r.Var)}`};
+}
+function normBottom(r){
+  if(disabled(r.Enabled)) return null;
+  const name=String(r.Name??"").trim(), brand=String(r.Brand??"").trim(), category=String(r.Category??"").trim(), color=String(r.Color??"Default").trim();
+  if(!name||!brand||!category) return null;
+  return {kind:"bottom", brand, category, name, color, image:String(r.Image||"https://placehold.co/400x400?text=Bottom").trim(), detail:`Length ${num(r.Length)} · ID ${num(r.ID)} · Var ${num(r.var??r.Var)}`};
+}
+function normShoe(r){
+  if(disabled(r.Enabled)) return null;
+  const name=String(r.Name??"").trim(), brand=String(r.Brand??"").trim(), color=String(r.Color??"Default").trim();
+  if(!name||!brand) return null;
+  return {kind:"shoe", brand, category:"Shoes", name, color, image:String(r.Image||"https://placehold.co/400x400?text=Shoe").trim(), detail:`Type ${num(r.Type)} · Design ${num(r.Design)}`};
+}
+function csvToProductsByKind(csv, kind){
+  return rowsToObjects(csv).map((r)=>{
+    if(kind==="top") return normTop(r);
+    if(kind==="bottom") return normBottom(r);
+    if(kind==="shoe") return normShoe(r);
+    return null;
+  }).filter(Boolean);
+}
+function gvizUrl(url){
+  const m=url.match(/\/spreadsheets\/d\/([^/]+)/);
+  const gid=(url.match(/[?&]gid=([^&]+)/)||[])[1] || "0";
+  return m ? `https://docs.google.com/spreadsheets/d/${m[1]}/gviz/tq?tqx=out:csv&gid=${gid}` : url;
+}
+async function loadCsv(url){
+  const urls=[url, gvizUrl(url)];
+  let lastErr;
+  for(const u of [...new Set(urls)]){
+    try{
+      const r=await fetch(u);
+      if(!r.ok) throw new Error(`HTTP ${r.status}`);
+      const text=await r.text();
+      if(text.includes("<!DOCTYPE html") || text.includes("<html")) throw new Error("Google returned HTML/login page instead of CSV");
+      return text;
+    }catch(e){ lastErr=e; }
+  }
+  throw lastErr || new Error("Could not load CSV");
+}
+
+function openImageZoom(imageUrl, imageName){
+  const modal = el("imageZoomModal"), img = el("imageZoomImg");
+  if(!modal || !img || !imageUrl) return;
+  img.src = imageUrl; img.alt = imageName || "Product preview";
+  modal.classList.remove("hidden"); modal.classList.add("flex");
+}
+function closeImageZoom(){
+  const modal = el("imageZoomModal"), img = el("imageZoomImg");
+  if(!modal || !img) return;
+  modal.classList.add("hidden"); modal.classList.remove("flex"); img.src = "";
+}
+function productCard(item){
+  return `
+    <article class="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+      <div class="relative aspect-square bg-zinc-100">
+        <img src="${item.image}" alt="${item.name}" class="h-full w-full object-cover" />
+        <button class="zoom-card absolute bottom-3 right-3 rounded-xl bg-white/90 px-3 py-1 text-xs font-semibold text-zinc-950 shadow-sm transition hover:bg-white" data-image="${item.image}" data-name="${item.name}">Zoom</button>
+      </div>
+      <div class="p-4">
+        <div class="mb-2 flex items-center justify-between gap-2">
+          <span class="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium capitalize text-zinc-600">${item.kind}</span>
+          <span class="text-xs font-medium text-zinc-500">${item.color}</span>
+        </div>
+        <h3 class="line-clamp-2 text-base font-semibold text-zinc-950">${item.name}</h3>
+        <p class="mt-1 text-sm text-zinc-500">${item.brand} · ${item.category}</p>
+        <p class="mt-3 text-xs text-zinc-500">${item.detail}</p>
+      </div>
+    </article>`;
+}
+function renderGroup(title, items){
+  if(!items.length) return "";
+  return `<section><div class="mb-4 flex items-end justify-between gap-4"><div><h2 class="text-2xl font-semibold tracking-tight">${title}</h2><p class="mt-1 text-sm text-zinc-500">${items.length} product previews</p></div></div><div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">${items.map(productCard).join("")}</div></section>`;
+}
+function renderLibrary(){
+  const query = el("librarySearch").value.trim().toLowerCase();
+  const all = [...products.top, ...products.bottom, ...products.shoe];
+  const filtered = all.filter(item => {
+    const matchesFilter = activeFilter === "all" || item.kind === activeFilter;
+    const haystack = `${item.brand} ${item.category} ${item.name} ${item.color} ${item.detail}`.toLowerCase();
+    return matchesFilter && (!query || haystack.includes(query));
+  });
+  el("filterAll").className=`rounded-2xl border px-4 py-3 text-sm font-medium ${cls(activeFilter==="all")}`;
+  el("filterTop").className=`rounded-2xl border px-4 py-3 text-sm font-medium ${cls(activeFilter==="top")}`;
+  el("filterBottom").className=`rounded-2xl border px-4 py-3 text-sm font-medium ${cls(activeFilter==="bottom")}`;
+  el("filterShoe").className=`rounded-2xl border px-4 py-3 text-sm font-medium ${cls(activeFilter==="shoe")}`;
+  const html = activeFilter==="all"
+    ? renderGroup("Tops", filtered.filter(i=>i.kind==="top")) + renderGroup("Bottoms", filtered.filter(i=>i.kind==="bottom")) + renderGroup("Shoes", filtered.filter(i=>i.kind==="shoe"))
+    : renderGroup(activeFilter==="top" ? "Tops" : activeFilter==="bottom" ? "Bottoms" : "Shoes", filtered);
+  el("libraryContent").innerHTML = html || `<section class="rounded-3xl border border-zinc-200 bg-white p-8 text-center text-sm text-zinc-500 shadow-sm">No products found.</section>`;
+  document.querySelectorAll(".zoom-card").forEach(btn => btn.onclick = (event) => { event.stopPropagation(); openImageZoom(btn.dataset.image, btn.dataset.name); });
+}
+async function init(){
+  el("imageZoomClose").onclick=closeImageZoom;
+  el("imageZoomModal").onclick=(event)=>{ if(event.target.id==="imageZoomModal") closeImageZoom(); };
+  document.addEventListener("keydown", (event)=>{ if(event.key==="Escape") closeImageZoom(); });
+  el("librarySearch").oninput=renderLibrary;
+  el("filterAll").onclick=()=>{ activeFilter="all"; renderLibrary(); };
+  el("filterTop").onclick=()=>{ activeFilter="top"; renderLibrary(); };
+  el("filterBottom").onclick=()=>{ activeFilter="bottom"; renderLibrary(); };
+  el("filterShoe").onclick=()=>{ activeFilter="shoe"; renderLibrary(); };
+  try{
+    const [tops,bottoms,shoes]=await Promise.all([
+      loadCsv(TOPS_CSV_URL).then(t=>csvToProductsByKind(t,"top")),
+      loadCsv(BOTTOMS_CSV_URL).then(t=>csvToProductsByKind(t,"bottom")),
+      loadCsv(SHOES_CSV_URL).then(t=>csvToProductsByKind(t,"shoe")),
+    ]);
+    products={top:tops,bottom:bottoms,shoe:shoes};
+    el("libraryStatus").textContent=`Loaded ${tops.length} tops, ${bottoms.length} bottoms, and ${shoes.length} shoes from Google Sheets.`;
+    el("libraryStatus").className="mb-6 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-900";
+  }catch(error){
+    el("libraryStatus").textContent="Product library could not be loaded. Make sure the product sheets are shared publicly or published to web.";
+    el("libraryStatus").className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900";
+  }
+  renderLibrary();
+}
+init();
+</script>
+  <script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="570lNS1kJB" data-description="Support me on Buy me a coffee!" data-message="" data-color="#40DCA5" data-position="Right" data-x_margin="18" data-y_margin="18"></script>
+</body>
+</html>
