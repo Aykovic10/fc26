@@ -159,6 +159,66 @@
               <div id="topPicker" class="sm:col-span-2"></div>
               <div id="bottomPicker" class="sm:col-span-2"></div>
               <div id="shoePicker" class="sm:col-span-2"></div>
+
+              <section class="sm:col-span-2 rounded-3xl border border-zinc-200 bg-zinc-50 p-4">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 class="text-base font-semibold text-zinc-950">Custom IDs</h3>
+                    <p class="mt-1 text-sm text-zinc-600">Use this when the item is not listed. Fixed values stay the same: top0, class, recolor, and socks.</p>
+                  </div>
+                  <button id="customPartsToggle" type="button" class="rounded-2xl border px-4 py-2 text-sm font-medium transition">Use custom IDs</button>
+                </div>
+
+                <div id="customPartsBox" class="mt-4 hidden space-y-4">
+                  <div class="grid gap-3 sm:grid-cols-4">
+                    <label class="block">
+                      <span class="mb-2 block text-xs font-medium text-zinc-600">Top1 ID</span>
+                      <input id="customTopId" class="custom-part-input w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400" placeholder="122156" />
+                    </label>
+                    <label class="block">
+                      <span class="mb-2 block text-xs font-medium text-zinc-600">Top1 Var</span>
+                      <input id="customTopVar" class="custom-part-input w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400" placeholder="0" />
+                    </label>
+                    <label class="block">
+                      <span class="mb-2 block text-xs font-medium text-zinc-600">Sleeve</span>
+                      <select id="customSleeve" class="custom-part-input w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400">
+                        <option value="0">0 · short sleeve</option>
+                        <option value="1">1 · long sleeve</option>
+                      </select>
+                    </label>
+                    <label class="block">
+                      <span class="mb-2 block text-xs font-medium text-zinc-600">Bottom ID</span>
+                      <input id="customBottomId" class="custom-part-input w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400" placeholder="400070" />
+                    </label>
+                  </div>
+
+                  <div class="grid gap-3 sm:grid-cols-4">
+                    <label class="block">
+                      <span class="mb-2 block text-xs font-medium text-zinc-600">Bottom Var</span>
+                      <input id="customBottomVar" class="custom-part-input w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400" placeholder="4" />
+                    </label>
+                    <label class="block">
+                      <span class="mb-2 block text-xs font-medium text-zinc-600">Length</span>
+                      <select id="customPants" class="custom-part-input w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400">
+                        <option value="0">0 · shorts</option>
+                        <option value="1">1 · pants</option>
+                      </select>
+                    </label>
+                    <label class="block">
+                      <span class="mb-2 block text-xs font-medium text-zinc-600">Shoe Type</span>
+                      <input id="customShoeType" class="custom-part-input w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400" placeholder="1039" />
+                    </label>
+                    <label class="block">
+                      <span class="mb-2 block text-xs font-medium text-zinc-600">Shoe Design</span>
+                      <input id="customShoeDesign" class="custom-part-input w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400" placeholder="0" />
+                    </label>
+                  </div>
+
+                  <div class="rounded-2xl bg-white p-3 text-xs leading-5 text-zinc-500">
+                    Required: Top1 ID, Bottom ID, and Shoe Type. Var/Design can stay 0. Sleeve and Length control the 0/1 manager body settings.
+                  </div>
+                </div>
+              </section>
             </div>
 
             <div class="mt-5 rounded-2xl bg-zinc-50 p-4 text-sm text-zinc-700">
@@ -251,6 +311,17 @@ const FIXED_TOP0 = { id: 0, class: 1, var: 0, recolor: 0 };
 let teams = [{id:240,name:"Team 240"},{id:73,name:"Team 73"}];
 let products = { top: [], bottom: [], shoe: [] };
 let selected = { top: null, bottom: null, shoe: null };
+let customParts = {
+  enabled: false,
+  topId: "",
+  topVar: "0",
+  sleeve: "0",
+  bottomId: "",
+  bottomVar: "0",
+  pants: "0",
+  shoeType: "",
+  shoeDesign: "0",
+};
 let selectedTeamId = 240;
 let teamMode = "list";
 let season = "summer";
@@ -557,10 +628,80 @@ function toggleProduct(kind, prod){
   const items=products[kind].filter(x=>x.brand===window[kind+"Brand"] && (kind==="shoe"||x.category===window[kind+"Category"]) && x.product===prod);
   selected[kind]=items[0]||null; updateAll();
 }
-function selectColor(kind, keyv){ selected[kind]=products[kind].find(x=>x.key===keyv)||null; updateAll(); }
+function selectColor(kind, keyv){ customParts.enabled=false; selected[kind]=products[kind].find(x=>x.key===keyv)||null; updateAll(); }
 function clearKind(kind){ window[kind+"Brand"]=null; window[kind+"Category"]=null; window[kind+"Product"]=null; selected[kind]=null; updateAll(); }
 
+
+function setCustomPartValue(field, value){
+  customParts[field] = String(value || "").replace(/[^0-9]/g, "");
+}
+
+function customPartsReady(){
+  return customParts.enabled
+    && Number(customParts.topId) > 0
+    && Number(customParts.bottomId) > 0
+    && Number(customParts.shoeType) > 0;
+}
+
+function customOutfit(){
+  if(!customPartsReady()) return null;
+
+  return {
+    sleeve: num(customParts.sleeve, 0),
+    pants: num(customParts.pants, 0),
+    top0: FIXED_TOP0,
+    top1: {
+      id: num(customParts.topId, 0),
+      class: 1,
+      var: num(customParts.topVar, 0),
+      recolor: 0,
+    },
+    bottom: {
+      id: num(customParts.bottomId, 0),
+      class: 1,
+      var: num(customParts.bottomVar, 0),
+      recolor: 0,
+    },
+    socks: FIXED_SOCKS,
+    shoes: {
+      type: num(customParts.shoeType, 0),
+      design: num(customParts.shoeDesign, 0),
+    },
+  };
+}
+
+function syncCustomPartsInputs(){
+  const pairs = [
+    ["customTopId", "topId"],
+    ["customTopVar", "topVar"],
+    ["customSleeve", "sleeve"],
+    ["customBottomId", "bottomId"],
+    ["customBottomVar", "bottomVar"],
+    ["customPants", "pants"],
+    ["customShoeType", "shoeType"],
+    ["customShoeDesign", "shoeDesign"],
+  ];
+
+  pairs.forEach(([id, field]) => {
+    const input = el(id);
+    if(input && input.value !== customParts[field]) input.value = customParts[field];
+  });
+}
+
+function updateCustomPartsUI(){
+  const toggle = el("customPartsToggle");
+  const box = el("customPartsBox");
+  if(!toggle || !box) return;
+
+  toggle.textContent = customParts.enabled ? "Using custom IDs" : "Use custom IDs";
+  toggle.className = `rounded-2xl border px-4 py-2 text-sm font-medium transition ${customParts.enabled ? "border-zinc-950 bg-zinc-950 text-white" : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"}`;
+  box.classList.toggle("hidden", !customParts.enabled);
+  syncCustomPartsInputs();
+}
+
 function currentOutfit(){
+  if(customParts.enabled) return customOutfit();
+
   if(!selected.top||!selected.bottom||!selected.shoe) return null;
   return {
     sleeve:selected.top.sleeve, pants:selected.bottom.pants, top0:FIXED_TOP0,
@@ -681,6 +822,7 @@ function updateAll(){
   el("winterBtn").className=`rounded-2xl border px-4 py-3 text-sm font-medium ${cls(season==="winter")}`;
   el("detectedSeason").textContent=season;
   const outfit=currentOutfit();
+  updateCustomPartsUI();
   el("detectedSleeve").textContent=outfit?outfit.sleeve:"—";
   el("detectedLength").textContent=outfit?outfit.pants:"—";
   el("addOutfitBtn").disabled=!outfit;
@@ -840,6 +982,25 @@ async function init(){
   if(el("clearConfiguredTeamsBtn")) el("clearConfiguredTeamsBtn").onclick=()=>{ teamOutfitConfigs={}; summerOutfits=[]; winterOutfits=[]; updateAll(); };
   el("summerBtn").onclick=()=>{season="summer";updateAll();};
   el("winterBtn").onclick=()=>{season="winter";updateAll();};
+  if(el("customPartsToggle")) el("customPartsToggle").onclick=()=>{
+    customParts.enabled=!customParts.enabled;
+    if(customParts.enabled){
+      selected.top=null;
+      selected.bottom=null;
+      selected.shoe=null;
+    }
+    updateAll();
+  };
+  document.querySelectorAll(".custom-part-input").forEach(input=>{
+    input.oninput=(event)=>{
+      setCustomPartValue(input.id.replace("custom","").replace(/^./, c=>c.toLowerCase()), event.target.value);
+      updateAll();
+    };
+    input.onchange=(event)=>{
+      setCustomPartValue(input.id.replace("custom","").replace(/^./, c=>c.toLowerCase()), event.target.value);
+      updateAll();
+    };
+  });
   el("addOutfitBtn").onclick=()=>{ const o=currentOutfit(); if(!o)return; (season==="summer"?summerOutfits:winterOutfits).push(o); saveCurrentTeamConfig(); updateAll(); };
   el("downloadInstall").onclick=()=>requestProtectedDownload("install");
   el("downloadResetTeam").onclick=()=>requestProtectedDownload("resetTeam");
