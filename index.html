@@ -10,7 +10,7 @@
 <body class="bg-zinc-50 text-zinc-950">
 
   <div id="memberOverlay" class="fixed inset-0 z-[9999] flex items-center justify-center bg-zinc-950/90 px-4 backdrop-blur-sm">
-    <div class="w-full max-w-md rounded-3xl border aborder-zinc-800 bg-white p-6 shadow-2xl sm:p-8">
+    <div class="w-full max-w-md rounded-3xl border border-zinc-800 bg-white p-6 shadow-2xl sm:p-8">
       <div class="mb-5 flex items-center gap-4">
         <img src="https://cdn.buymeacoffee.com/uploads/profile_pictures/2024/05/e31c55d0bc66ff537c0e507db85699ff.png@300w_0e.webp" alt="Aykovic10" class="h-14 w-14 rounded-2xl border border-zinc-200 object-cover shadow-sm" />
         <div>
@@ -126,18 +126,20 @@
                 <span class="mb-2 block text-sm font-medium text-zinc-700">Custom team ID</span>
                 <div class="flex gap-2">
                   <input id="customTeamInput" class="min-w-0 flex-1 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400" placeholder="Type team ID, e.g. 240" />
-                  <button id="addCustomTeamBtn" type="button" class="shrink-0 rounded-2xl bg-zinc-950 px-4 py-3 text-sm font-medium text-white transition hover:bg-zinc-800">Add</button>
+                  <button id="loadCustomTeamBtn" type="button" class="shrink-0 rounded-2xl bg-zinc-950 px-4 py-3 text-sm font-medium text-white transition hover:bg-zinc-800">Load</button>
                 </div>
               </label>
             </div>
 
             <div class="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
               <div class="mb-2 flex items-center justify-between gap-3">
-                <span class="text-sm font-medium text-zinc-700">Selected teams</span>
-                <button id="clearSelectedTeamsBtn" type="button" class="rounded-full bg-white px-3 py-1 text-xs text-zinc-600 transition hover:bg-zinc-100">Clear</button>
+                <span class="text-sm font-medium text-zinc-700">Teams in final script</span>
+                <button id="clearConfiguredTeamsBtn" type="button" class="rounded-full bg-white px-3 py-1 text-xs text-zinc-600 transition hover:bg-zinc-100">Clear all</button>
               </div>
-              <div id="selectedTeamsList" class="flex flex-wrap gap-2"></div>
-              <p class="mt-2 text-xs text-zinc-500">Select multiple teams from the list, or add custom IDs. The same outfit setup will apply to all selected teams.</p>
+              <div id="configuredTeamsList" class="space-y-2"></div>
+              <p class="mt-2 text-xs text-zinc-500">
+                Workflow: choose a team, add its outfits, then choose another team and add different outfits. All configured teams download together in one Lua script.
+              </p>
             </div>
           </section>
 
@@ -190,7 +192,7 @@
             <p class="mb-4 rounded-2xl bg-zinc-50 px-4 py-3 text-sm text-zinc-600">Target team ID(s): <span id="targetTeam" class="font-semibold text-zinc-900">—</span></p>
             <div class="space-y-3">
               <button id="downloadInstall" disabled class="flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-zinc-300">↓ Download Add / Update Script</button>
-              <button id="downloadResetTeam" class="flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-medium text-zinc-800">↻ Download Reset Selected Team(s)</button>
+              <button id="downloadResetTeam" class="flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-medium text-zinc-800">↻ Download Reset Active Team</button>
               <button id="downloadResetAll" class="flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-medium text-zinc-800">× Download Reset All</button>
             </div>
           </section>
@@ -250,11 +252,11 @@ let teams = [{id:240,name:"Team 240"},{id:73,name:"Team 73"}];
 let products = { top: [], bottom: [], shoe: [] };
 let selected = { top: null, bottom: null, shoe: null };
 let selectedTeamId = 240;
-let selectedTeamIds = [240];
 let teamMode = "list";
 let season = "summer";
 let summerOutfits = [];
 let winterOutfits = [];
+let teamOutfitConfigs = {};
 let validatedStudioPassEmail = "";
 
 function el(id){ return document.getElementById(id); }
@@ -340,66 +342,119 @@ async function loadCsv(url){
 function unique(arr, field){ return [...new Set(arr.map(x=>x[field]).filter(Boolean))]; }
 
 
+function cloneOutfits(outfits){
+  return JSON.parse(JSON.stringify(outfits || []));
+}
+
 function getTeamNameById(id){
   const found = teams.find(t => Number(t.id) === Number(id));
   return found ? found.name : `Team ${id}`;
 }
 
-function hasSelectedTeam(id){
-  return selectedTeamIds.some(teamId => Number(teamId) === Number(id));
+function getActiveTeamId(){
+  return Number(selectedTeamId);
 }
 
-function toggleTeamSelection(id){
-  const numericId = Number(id);
-  if(!Number.isFinite(numericId) || numericId <= 0) return;
+function hasOutfitsForCurrentTeam(){
+  return summerOutfits.length > 0 || winterOutfits.length > 0;
+}
 
-  if(hasSelectedTeam(numericId)){
-    selectedTeamIds = selectedTeamIds.filter(teamId => Number(teamId) !== numericId);
+function saveCurrentTeamConfig(){
+  const teamId = getActiveTeamId();
+  if(!Number.isFinite(teamId) || teamId <= 0) return;
+
+  if(hasOutfitsForCurrentTeam()){
+    teamOutfitConfigs[teamId] = {
+      teamId,
+      teamName: getTeamNameById(teamId),
+      summerOutfits: cloneOutfits(summerOutfits),
+      winterOutfits: cloneOutfits(winterOutfits),
+    };
   }else{
-    selectedTeamIds.push(numericId);
+    delete teamOutfitConfigs[teamId];
   }
-
-  selectedTeamId = selectedTeamIds[0] || numericId;
-  updateAll();
 }
 
-function addCustomTeamSelection(){
-  const input = el("customTeamInput");
-  const numericId = Number(input.value);
+function loadTeamConfig(teamId){
+  const numericId = Number(teamId);
+  const config = teamOutfitConfigs[numericId];
+
+  summerOutfits = config ? cloneOutfits(config.summerOutfits) : [];
+  winterOutfits = config ? cloneOutfits(config.winterOutfits) : [];
+}
+
+function switchActiveTeam(teamId){
+  const numericId = Number(teamId);
   if(!Number.isFinite(numericId) || numericId <= 0) return;
 
-  if(!hasSelectedTeam(numericId)){
-    selectedTeamIds.push(numericId);
+  saveCurrentTeamConfig();
+  selectedTeamId = numericId;
+  loadTeamConfig(numericId);
+  updateAll();
+}
+
+function getConfiguredTeamIds(){
+  saveCurrentTeamConfig();
+  return Object.keys(teamOutfitConfigs)
+    .map(id => Number(id))
+    .filter(id => Number.isFinite(id) && id > 0)
+    .sort((a,b)=>a-b);
+}
+
+function getTeamConfigsPayload(){
+  return getConfiguredTeamIds().map(teamId => ({
+    teamId,
+    teamName: teamOutfitConfigs[teamId].teamName || getTeamNameById(teamId),
+    summerOutfits: cloneOutfits(teamOutfitConfigs[teamId].summerOutfits),
+    winterOutfits: cloneOutfits(teamOutfitConfigs[teamId].winterOutfits),
+  }));
+}
+
+function removeConfiguredTeam(teamId){
+  const numericId = Number(teamId);
+  delete teamOutfitConfigs[numericId];
+
+  if(Number(selectedTeamId) === numericId){
+    summerOutfits = [];
+    winterOutfits = [];
   }
 
-  selectedTeamId = selectedTeamIds[0] || numericId;
-  input.value = "";
   updateAll();
 }
 
-function removeSelectedTeam(id){
-  selectedTeamIds = selectedTeamIds.filter(teamId => Number(teamId) !== Number(id));
-  selectedTeamId = selectedTeamIds[0] || 0;
-  updateAll();
-}
-
-function renderSelectedTeams(){
-  const box = el("selectedTeamsList");
+function renderConfiguredTeams(){
+  const box = el("configuredTeamsList");
   if(!box) return;
 
-  if(!selectedTeamIds.length){
-    box.innerHTML = `<span class="rounded-full bg-white px-3 py-2 text-xs text-zinc-500">No teams selected</span>`;
+  const ids = getConfiguredTeamIds();
+
+  if(!ids.length){
+    box.innerHTML = `<p class="text-sm text-zinc-500">No teams configured yet.</p>`;
     return;
   }
 
-  box.innerHTML = selectedTeamIds.map(id => `
-    <button type="button" class="selected-team-chip rounded-full bg-zinc-950 px-3 py-2 text-xs font-medium text-white transition hover:bg-zinc-800" data-id="${id}">
-      ${getTeamNameById(id)} · ${id} ×
-    </button>
-  `).join("");
+  box.innerHTML = ids.map(teamId => {
+    const cfg = teamOutfitConfigs[teamId];
+    const active = Number(selectedTeamId) === Number(teamId);
+    const count = (cfg.summerOutfits?.length || 0) + (cfg.winterOutfits?.length || 0);
 
-  document.querySelectorAll(".selected-team-chip").forEach(button => {
-    button.onclick = () => removeSelectedTeam(button.dataset.id);
+    return `
+      <div class="flex items-center justify-between gap-3 rounded-2xl border ${active ? "border-zinc-950 bg-white" : "border-zinc-200 bg-white"} px-3 py-2 text-sm">
+        <button type="button" class="configured-team-load min-w-0 flex-1 text-left" data-id="${teamId}">
+          <span class="block truncate font-medium text-zinc-900">${cfg.teamName || getTeamNameById(teamId)} · ${teamId}</span>
+          <span class="block text-xs text-zinc-500">${cfg.summerOutfits?.length || 0} summer · ${cfg.winterOutfits?.length || 0} winter · ${count} total</span>
+        </button>
+        <button type="button" class="configured-team-remove rounded-xl px-2 py-1 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900" data-id="${teamId}">×</button>
+      </div>
+    `;
+  }).join("");
+
+  document.querySelectorAll(".configured-team-load").forEach(button => {
+    button.onclick = () => switchActiveTeam(button.dataset.id);
+  });
+
+  document.querySelectorAll(".configured-team-remove").forEach(button => {
+    button.onclick = () => removeConfiguredTeam(button.dataset.id);
   });
 }
 
@@ -407,13 +462,14 @@ function renderTeams(){
   const q=el("teamSearch").value.trim().toLowerCase();
   const list=teams.filter(t=>!q||String(t.id).includes(q)||t.name.toLowerCase().includes(q)).slice(0,80);
   el("teamResults").innerHTML = list.length ? list.map(t=>{
-    const selected = hasSelectedTeam(t.id);
+    const active = Number(t.id) === Number(selectedTeamId);
+    const configured = !!teamOutfitConfigs[Number(t.id)];
     return `
-    <button class="team-row mb-1 flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition last:mb-0 ${selected?"bg-zinc-950 text-white":"text-zinc-700 hover:bg-zinc-100"}" data-id="${t.id}">
-      <span>${t.name}</span><span class="${selected?"text-zinc-300":"text-zinc-400"}">${selected ? "✓ " : ""}${t.id}</span>
+    <button class="team-row mb-1 flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition last:mb-0 ${active?"bg-zinc-950 text-white":"text-zinc-700 hover:bg-zinc-100"}" data-id="${t.id}">
+      <span>${configured ? "✓ " : ""}${t.name}</span><span class="${active?"text-zinc-300":"text-zinc-400"}">${t.id}</span>
     </button>`;
   }).join("") : `<div class="px-3 py-4 text-sm text-zinc-500">No teams found.</div>`;
-  document.querySelectorAll(".team-row").forEach(b=>b.onclick=()=>toggleTeamSelection(b.dataset.id));
+  document.querySelectorAll(".team-row").forEach(b=>b.onclick=()=>switchActiveTeam(b.dataset.id));
 }
 
 function pickerHTML(kind,label){
@@ -520,7 +576,7 @@ function card(outfit,i,seasonName){
 function renderOutfits(){
   el("summerOutfits").innerHTML=summerOutfits.length?summerOutfits.map((o,i)=>card(o,i,"summer")).join(""):`<p class="text-sm text-zinc-500">No summer outfits yet.</p>`;
   el("winterOutfits").innerHTML=winterOutfits.length?winterOutfits.map((o,i)=>card(o,i,"winter")).join(""):`<p class="text-sm text-zinc-500">No winter outfits yet.</p>`;
-  document.querySelectorAll(".remove-outfit").forEach(b=>b.onclick=()=>{ const arr=b.dataset.season==="summer"?summerOutfits:winterOutfits; arr.splice(Number(b.dataset.index),1); updateAll();});
+  document.querySelectorAll(".remove-outfit").forEach(b=>b.onclick=()=>{ const arr=b.dataset.season==="summer"?summerOutfits:winterOutfits; arr.splice(Number(b.dataset.index),1); saveCurrentTeamConfig(); updateAll();});
 }
 
 
@@ -559,6 +615,32 @@ function luaPreviewNormalized(){
   if(winterOutfits.length&&!summerOutfits.length) return {summer:winterOutfits,winter:winterOutfits};
   return {summer:summerOutfits,winter:winterOutfits};
 }
+
+function generateLuaPreviewAllConfigs(){
+  const configs = getTeamConfigsPayload();
+
+  if(!configs.length){
+    return "-- Preview only. Add outfits to at least one team first.\\nreturn {}\\n";
+  }
+
+  const blocks = configs.map(config => {
+    const n = normalizeSeasonPreview(config.summerOutfits, config.winterOutfits);
+    return `    [${config.teamId}] = {\n        summer = ${luaPreviewSeason(n.summer,3)},\n\n        winter = ${luaPreviewSeason(n.winter,3)},\n    },`;
+  }).join("\\n");
+
+  return `-- Preview only. Actual download is generated securely after Studio Pass verification.\\nreturn {\\n${blocks}\\n}\\n`;
+}
+
+function normalizeSeasonPreview(summer, winter){
+  const summerList = summer || [];
+  const winterList = winter || [];
+
+  if(summerList.length && !winterList.length) return { summer: summerList, winter: summerList };
+  if(winterList.length && !summerList.length) return { summer: winterList, winter: winterList };
+
+  return { summer: summerList, winter: winterList };
+}
+
 function generateLuaPreview(teamId){
   const n=luaPreviewNormalized();
   return `-- Preview only. Actual download is generated securely after Studio Pass verification.\nreturn {\n    [${teamId}] = {\n        summer = ${luaPreviewSeason(n.summer,3)},\n\n        winter = ${luaPreviewSeason(n.winter,3)},\n    },\n}\n`;
@@ -604,11 +686,13 @@ function updateAll(){
   el("addOutfitBtn").disabled=!outfit;
   el("addOutfitBtn").innerHTML=`＋ Add to ${season}`;
   renderOutfits();
-  renderSelectedTeams();
-  const validTeam = selectedTeamIds.length > 0;
-  el("targetTeam").textContent=validTeam ? selectedTeamIds.join(", ") : "—";
-  el("downloadInstall").disabled=!(validTeam&&(summerOutfits.length||winterOutfits.length));
-  if(el("luaPreview")) el("luaPreview").textContent=generateLuaPreview(validTeam?selectedTeamIds[0]:0);
+  saveCurrentTeamConfig();
+  renderConfiguredTeams();
+  const configuredIds = getConfiguredTeamIds();
+  const validTeam = configuredIds.length > 0;
+  el("targetTeam").textContent=validTeam?configuredIds.join(", "):"—";
+  el("downloadInstall").disabled=!validTeam;
+  if(el("luaPreview")) el("luaPreview").textContent=generateLuaPreviewAllConfigs();
 }
 
 function normalizeEmail(value){
@@ -682,13 +766,7 @@ function setupMemberGate(){
 }
 
 function getActiveTeamId(){
-  return selectedTeamIds[0] || 0;
-}
-
-function getActiveTeamIds(){
-  return selectedTeamIds
-    .map(id => Number(id))
-    .filter(id => Number.isFinite(id) && id > 0);
+  return teamMode === "custom" ? Number(el("customTeamInput").value) : Number(selectedTeamId);
 }
 
 async function requestProtectedDownload(scriptType){
@@ -702,16 +780,16 @@ async function requestProtectedDownload(scriptType){
     return;
   }
 
-  const teamIds = getActiveTeamIds();
-  const team = teamIds[0] || 0;
+  const team = getActiveTeamId();
+  const teamConfigs = getTeamConfigsPayload();
 
-  if(scriptType !== "resetAll" && teamIds.length === 0){
-    alert("Choose at least one valid team first.");
+  if(scriptType === "install" && teamConfigs.length === 0){
+    alert("Add at least one outfit to at least one team first.");
     return;
   }
 
-  if(scriptType === "install" && !(summerOutfits.length || winterOutfits.length)){
-    alert("Add at least one outfit first.");
+  if(scriptType === "resetTeam" && (!Number.isFinite(team) || team <= 0)){
+    alert("Choose a valid active team first.");
     return;
   }
 
@@ -720,7 +798,7 @@ async function requestProtectedDownload(scriptType){
     email: validatedStudioPassEmail,
     scriptType,
     teamId: team,
-    teamIds,
+    teamConfigs,
     summerOutfits,
     winterOutfits,
   };
@@ -741,7 +819,7 @@ async function requestProtectedDownload(scriptType){
       ? "reset_all_manager_outfits.lua"
       : scriptType === "resetTeam"
         ? `reset_manager_outfit_team_${team}.lua`
-        : `install_manager_outfit_team_${team}.lua`;
+        : `install_manager_outfit_${teamConfigs.length || 1}_teams.lua`;
 
     await downloadBlobFromResponse(response, fallbackName);
   }catch(error){
@@ -758,11 +836,11 @@ async function init(){
   el("customTeamBtn").onclick=()=>{teamMode="custom";updateAll();};
   el("teamSearch").oninput=renderTeams;
   el("customTeamInput").oninput=e=>{e.target.value=e.target.value.replace(/[^0-9]/g,"");};
-  if(el("addCustomTeamBtn")) el("addCustomTeamBtn").onclick=addCustomTeamSelection;
-  if(el("clearSelectedTeamsBtn")) el("clearSelectedTeamsBtn").onclick=()=>{ selectedTeamIds=[]; selectedTeamId=0; updateAll(); };
+  if(el("loadCustomTeamBtn")) el("loadCustomTeamBtn").onclick=()=>{ switchActiveTeam(Number(el("customTeamInput").value)); };
+  if(el("clearConfiguredTeamsBtn")) el("clearConfiguredTeamsBtn").onclick=()=>{ teamOutfitConfigs={}; summerOutfits=[]; winterOutfits=[]; updateAll(); };
   el("summerBtn").onclick=()=>{season="summer";updateAll();};
   el("winterBtn").onclick=()=>{season="winter";updateAll();};
-  el("addOutfitBtn").onclick=()=>{ const o=currentOutfit(); if(!o)return; (season==="summer"?summerOutfits:winterOutfits).push(o); updateAll(); };
+  el("addOutfitBtn").onclick=()=>{ const o=currentOutfit(); if(!o)return; (season==="summer"?summerOutfits:winterOutfits).push(o); saveCurrentTeamConfig(); updateAll(); };
   el("downloadInstall").onclick=()=>requestProtectedDownload("install");
   el("downloadResetTeam").onclick=()=>requestProtectedDownload("resetTeam");
   el("downloadResetAll").onclick=()=>requestProtectedDownload("resetAll");
@@ -772,7 +850,7 @@ async function init(){
 
   try{
     teams=(await loadCsv(TEAMS_CSV_URL).then(rowsToObjects)).map(normTeam).filter(Boolean);
-    if(teams.length) { selectedTeamId=teams[0].id; selectedTeamIds=[teams[0].id]; el("teamStatus").textContent=`Loaded ${teams.length} teams from Google Sheet.`; el("teamStatus").className="mb-4 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-900"; }
+    if(teams.length) { selectedTeamId=teams[0].id; loadTeamConfig(selectedTeamId); el("teamStatus").textContent=`Loaded ${teams.length} teams from Google Sheet.`; el("teamStatus").className="mb-4 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-900"; }
   }catch(e){ el("teamStatus").textContent="Team sheet could not be loaded. Make sure it is shared publicly or published to web. Fallback teams are shown."; el("teamStatus").className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"; }
 
   try{
