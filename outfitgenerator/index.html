@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FC26 Manager Outfit Creator</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, Arial, sans-serif;
+      background: #050505;
+      color: #ffffff;
+    }
+
+    .page {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 24px;
+      padding: 24px;
+    }
+
+    .viewer-card,
+    .panel-card {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: linear-gradient(135deg, #171717, #050505);
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+    }
+
+    .topbar {
+      min-height: 76px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .eyebrow {
+      margin: 0 0 4px;
+      color: rgba(255, 255, 255, 0.55);
+      font-size: 14px;
+    }
+
+    h1,
+    h2 {
+      margin: 0;
+      letter-spacing: -0.02em;
+    }
+
+    h1 { font-size: 25px; }
+
+    h2 {
+      font-size: 18px;
+      margin-bottom: 6px;
+    }
+
+    .viewer {
+      height: calc(100vh - 124px);
+      min-height: 520px;
+      position: relative;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .loading {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 28px;
+      color: rgba(255, 255, 255, 0.75);
+      pointer-events: none;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .panel-card {
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.045);
+      backdrop-filter: blur(16px);
+    }
+
+    .muted,
+    .small-note {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 14px;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .small-note {
+      margin-top: 12px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.42);
+    }
+
+    .field { margin-top: 20px; }
+
+    label {
+      display: block;
+      color: rgba(255, 255, 255, 0.65);
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .color-row,
+    .file-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    input[type="color"] {
+      width: 64px;
+      height: 48px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 14px;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    input[type="text"],
+    input[type="file"] {
+      min-height: 48px;
+      flex: 1;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
+      background: rgba(0, 0, 0, 0.35);
+      color: white;
+      padding: 13px 14px;
+      outline: none;
+      min-width: 0;
+    }
+
+    input[type="range"] { width: 100%; }
+
+    .preset-grid {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .preset {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.25);
+      color: rgba(255, 255, 255, 0.72);
+      border-radius: 16px;
+      padding: 10px;
+      text-align: left;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .preset:hover { background: rgba(255, 255, 255, 0.1); }
+
+    .swatch {
+      display: block;
+      height: 30px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      margin-bottom: 8px;
+    }
+
+    .slider-head {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 6px;
+    }
+
+    button.main-button,
+    button.secondary-button {
+      min-height: 48px;
+      border: 0;
+      border-radius: 16px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: 0.2s ease;
+      white-space: nowrap;
+    }
+
+    button.main-button {
+      width: 100%;
+      background: #ffffff;
+      color: #000000;
+    }
+
+    button.main-button:hover { opacity: 0.88; }
+
+    button.secondary-button {
+      padding: 0 16px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+    }
+
+    button.secondary-button:hover { background: rgba(255, 255, 255, 0.16); }
+
+    .status {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(0, 0, 0, 0.56);
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 13px;
+      line-height: 1.45;
+      backdrop-filter: blur(12px);
+    }
+
+    .error-text { color: #ffb4b4; }
+    .success-text { color: #b8ffcc; }
+
+    @media (max-width: 900px) {
+      .page { grid-template-columns: 1fr; }
+      .viewer { height: 58vh; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="viewer-card">
+      <div class="topbar">
+        <div>
+          <p class="eyebrow">FC26 Manager Outfit Creator</p>
+          <h1>Jacket Builder</h1>
+        </div>
+        <button id="rotateButton" class="secondary-button">Stop Rotate</button>
+      </div>
+
+      <div id="viewer" class="viewer">
+        <div id="loading" class="loading">Starting 3D viewer...</div>
+        <div id="status" class="status">Model path: checking...</div>
+      </div>
+    </section>
+
+    <aside class="sidebar">
+      <section class="panel-card">
+        <h2>One Jacket MVP</h2>
+        <p class="muted">Change color, material feel, preview, and export a starter PNG texture.</p>
+
+        <div class="field">
+          <label for="localModelInput">Load FBX manually if GitHub path fails</label>
+          <div class="file-row">
+            <input id="localModelInput" type="file" accept=".fbx" />
+          </div>
+          <p class="small-note">For GitHub, place the file at <strong>outfitgenerator/models/jacket.fbx</strong>. File names are case-sensitive.</p>
+        </div>
+
+        <div class="field">
+          <label for="colorPicker">Custom color</label>
+          <div class="color-row">
+            <input id="colorPicker" type="color" value="#111111" />
+            <input id="colorText" type="text" value="#111111" placeholder="#111111" />
+          </div>
+        </div>
+
+        <div id="presetGrid" class="preset-grid"></div>
+
+        <div class="field">
+          <div class="slider-head">
+            <span>Fabric roughness</span>
+            <span id="roughnessValue">0.72</span>
+          </div>
+          <input id="roughness" type="range" min="0" max="1" step="0.01" value="0.72" />
+        </div>
+
+        <div class="field">
+          <div class="slider-head">
+            <span>Slight shine</span>
+            <span id="metalnessValue">0.02</span>
+          </div>
+          <input id="metalness" type="range" min="0" max="0.35" step="0.01" value="0.02" />
+        </div>
+      </section>
+
+      <section class="panel-card">
+        <h2>Export</h2>
+        <p class="muted" style="margin-bottom: 16px;">This downloads a placeholder texture. Later we replace it with the real FC26 jacket UV template.</p>
+        <button id="downloadButton" class="main-button">Download Jacket Texture</button>
+      </section>
+    </aside>
+  </main>
+
+  <script type="module">
+    import * as THREE from "https://esm.sh/three@0.160.0";
+    import { OrbitControls } from "https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js";
+    import { FBXLoader } from "https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js";
+
+    // Main path for your repository setup:
+    // fc26/outfitgenerator/index.html
+    // fc26/outfitgenerator/models/jacket.fbx
+    const MODEL_PATHS = Object.freeze([
+      "./models/jacket.fbx",
+      "models/jacket.fbx",
+      "./jacket.fbx"
+    ]);
+
+    const COLOR_PRESETS = Object.freeze([
+      Object.freeze({ id: "black", label: "Black", hex: "#111111" }),
+      Object.freeze({ id: "navy", label: "Navy", hex: "#17233f" }),
+      Object.freeze({ id: "stone", label: "Stone", hex: "#b7afa0" }),
+      Object.freeze({ id: "olive", label: "Olive", hex: "#4f5b3a" }),
+      Object.freeze({ id: "wine", label: "Wine", hex: "#5b1f2a" }),
+      Object.freeze({ id: "cream", label: "Cream", hex: "#e8dfcf" })
+    ]);
+
+    function isValidHexColor(value) {
+      return typeof value === "string" && /^#[0-9A-Fa-f]{6}$/.test(value);
+    }
+
+    function normalizeHexColor(value, fallback = "#111111") {
+      return isValidHexColor(value) ? value : fallback;
+    }
+
+    function validateColorPresets(presets) {
+      return Array.isArray(presets) && presets.every((preset) =>
+        preset &&
+        typeof preset.id === "string" &&
+        preset.id.trim().length > 0 &&
+        typeof preset.label === "string" &&
+        preset.label.trim().length > 0 &&
+        isValidHexColor(preset.hex)
+      );
+    }
+
+    function validateModelPaths(paths) {
+      return Array.isArray(paths) && paths.length > 0 && paths.every((path) =>
+        typeof path === "string" && path.toLowerCase().endsWith(".fbx") && path.trim().length > 4
+      );
+    }
+
+    function runTests() {
+      console.assert(validateColorPresets(COLOR_PRESETS), "COLOR_PRESETS must contain valid preset objects.");
+      console.assert(isValidHexColor("#111111") === true, "Valid hex should pass.");
+      console.assert(isValidHexColor("111111") === false, "Hex must start with #.");
+      console.assert(normalizeHexColor("bad", "#17233f") === "#17233f", "Bad color should use fallback.");
+      console.assert(validateModelPaths(MODEL_PATHS), "MODEL_PATHS must contain valid .fbx paths.");
+      console.assert(MODEL_PATHS.includes("./models/jacket.fbx"), "Primary model path should remain ./models/jacket.fbx.");
+    }
+
+    runTests();
+
+    const state = {
+      color: "#111111",
+      roughness: 0.72,
+      metalness: 0.02,
+      autoRotate: true,
+      model: null,
+      fallbackModel: null
+    };
+
+    const viewer = document.getElementById("viewer");
+    const loading = document.getElementById("loading");
+    const status = document.getElementById("status");
+    const colorPicker = document.getElementById("colorPicker");
+    const colorText = document.getElementById("colorText");
+    const roughness = document.getElementById("roughness");
+    const metalness = document.getElementById("metalness");
+    const roughnessValue = document.getElementById("roughnessValue");
+    const metalnessValue = document.getElementById("metalnessValue");
+    const rotateButton = document.getElementById("rotateButton");
+    const downloadButton = document.getElementById("downloadButton");
+    const presetGrid = document.getElementById("presetGrid");
+    const localModelInput = document.getElementById("localModelInput");
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color("#050505");
+
+    const camera = new THREE.PerspectiveCamera(38, viewer.clientWidth / viewer.clientHeight, 0.1, 100);
+    camera.position.set(0, 0.35, 4);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(viewer.clientWidth, viewer.clientHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    viewer.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.enablePan = false;
+    controls.minDistance = 2.2;
+    controls.maxDistance = 6;
+
+    scene.add(new THREE.AmbientLight("#ffffff", 0.8));
+
+    const keyLight = new THREE.DirectionalLight("#ffffff", 2.3);
+    keyLight.position.set(4, 5, 5);
+    keyLight.castShadow = true;
+    scene.add(keyLight);
+
+    const fillLight = new THREE.DirectionalLight("#ffffff", 0.75);
+    fillLight.position.set(-4, 2, -3);
+    scene.add(fillLight);
+
+    const floor = new THREE.Mesh(
+      new THREE.CircleGeometry(2.25, 64),
+      new THREE.ShadowMaterial({ opacity: 0.28 })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -1.45;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    function setStatus(message, type = "") {
+      status.className = `status ${type}`.trim();
+      status.innerHTML = message;
+    }
+
+    function setLoading(message, visible = true) {
+      loading.innerHTML = message;
+      loading.style.display = visible ? "grid" : "none";
+    }
+
+    function removeCurrentModel() {
+      if (!state.model) return;
+      scene.remove(state.model);
+      state.model = null;
+    }
+
+    function applyMaterialToModel() {
+      const target = state.model || state.fallbackModel;
+      if (!target) return;
+
+      const safeColor = normalizeHexColor(state.color);
+      target.traverse((child) => {
+        if (!child.isMesh || !child.material) return;
+
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        materials.forEach((material) => {
+          if (material.color) material.color.set(safeColor);
+          if ("roughness" in material) material.roughness = state.roughness;
+          if ("metalness" in material) material.metalness = state.metalness;
+          material.needsUpdate = true;
+        });
+      });
+    }
+
+    function cloneMaterials(object) {
+      object.traverse((child) => {
+        if (!child.isMesh) return;
+        child.castShadow = true;
+        child.receiveShadow = true;
+
+        if (child.material) {
+          child.material = Array.isArray(child.material)
+            ? child.material.map((material) => material.clone())
+            : child.material.clone();
+        }
+      });
+    }
+
+    function frameModel(object) {
+      const box = new THREE.Box3().setFromObject(object);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+      const maxSize = Math.max(size.x, size.y, size.z) || 1;
+      const targetHeight = 2.8;
+      const scale = targetHeight / maxSize;
+
+      object.scale.setScalar(scale);
+      object.position.x = -center.x * scale;
+      object.position.y = -center.y * scale - 0.05;
+      object.position.z = -center.z * scale;
+    }
+
+    function createFallbackJacket() {
+      const group = new THREE.Group();
+      group.name = "Fallback jacket placeholder";
+
+      const torsoMaterial = new THREE.MeshStandardMaterial({
+        color: normalizeHexColor(state.color),
+        roughness: state.roughness,
+        metalness: state.metalness
+      });
+
+      const darkMaterial = new THREE.MeshStandardMaterial({ color: "#090909", roughness: 0.82, metalness: 0.03 });
+
+      const torso = new THREE.Mesh(new THREE.BoxGeometry(1.15, 1.65, 0.42), torsoMaterial);
+      torso.position.y = 0;
+      torso.castShadow = true;
+      torso.receiveShadow = true;
+      group.add(torso);
+
+      const leftSleeve = new THREE.Mesh(new THREE.CapsuleGeometry(0.16, 1.25, 8, 18), torsoMaterial.clone());
+      leftSleeve.position.set(-0.78, -0.05, 0);
+      leftSleeve.rotation.z = -0.18;
+      leftSleeve.castShadow = true;
+      group.add(leftSleeve);
+
+      const rightSleeve = leftSleeve.clone();
+      rightSleeve.position.x = 0.78;
+      rightSleeve.rotation.z = 0.18;
+      group.add(rightSleeve);
+
+      const collar = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.045, 10, 32, Math.PI), darkMaterial);
+      collar.position.set(0, 0.9, 0.23);
+      collar.rotation.x = Math.PI;
+      group.add(collar);
+
+      const zipper = new THREE.Mesh(new THREE.BoxGeometry(0.035, 1.45, 0.025), darkMaterial);
+      zipper.position.set(0, 0, 0.235);
+      group.add(zipper);
+
+      group.position.y = -0.1;
+      scene.add(group);
+      state.fallbackModel = group;
+      applyMaterialToModel();
+    }
+
+    function useFallback(reason) {
+      removeCurrentModel();
+      if (!state.fallbackModel) createFallbackJacket();
+      setLoading("", false);
+      setStatus(
+        `<span class="error-text">FBX did not load.</span><br>${reason}<br>Showing placeholder so the creator still works. You can also upload the FBX manually from the sidebar.`,
+        "error-text"
+      );
+    }
+
+    function loadFbxFromUrl(url) {
+      return new Promise((resolve, reject) => {
+        const loader = new FBXLoader();
+        loader.load(
+          url,
+          (object) => resolve(object),
+          undefined,
+          (error) => reject(error)
+        );
+      });
+    }
+
+    async function loadModelFromPaths() {
+      setLoading(`Loading model...<br>${MODEL_PATHS[0]}`);
+      setStatus(`Checking model path: ${MODEL_PATHS[0]}`);
+
+      const errors = [];
+
+      for (const path of MODEL_PATHS) {
+        try {
+          setStatus(`Trying: ${path}`);
+          const object = await loadFbxFromUrl(path);
+          removeCurrentModel();
+          if (state.fallbackModel) {
+            scene.remove(state.fallbackModel);
+            state.fallbackModel = null;
+          }
+          state.model = object;
+          cloneMaterials(object);
+          frameModel(object);
+          applyMaterialToModel();
+          scene.add(object);
+          setLoading("", false);
+          setStatus(`<span class="success-text">Loaded FBX successfully:</span> ${path}`, "success-text");
+          return;
+        } catch (error) {
+          console.error(`FBX failed to load from ${path}:`, error);
+          errors.push(path);
+        }
+      }
+
+      useFallback(`Tried: ${errors.join(", ")}. Make sure your file is exactly named <strong>jacket.fbx</strong> and is inside <strong>outfitgenerator/models/</strong>.`);
+    }
+
+    function loadLocalFbxFile(file) {
+      if (!file) return;
+      if (!file.name.toLowerCase().endsWith(".fbx")) {
+        setStatus(`<span class="error-text">Please choose an .fbx file.</span>`, "error-text");
+        return;
+      }
+
+      const url = URL.createObjectURL(file);
+      setLoading(`Loading local file...<br>${file.name}`);
+      setStatus(`Loading local file: ${file.name}`);
+
+      loadFbxFromUrl(url)
+        .then((object) => {
+          removeCurrentModel();
+          if (state.fallbackModel) {
+            scene.remove(state.fallbackModel);
+            state.fallbackModel = null;
+          }
+          state.model = object;
+          cloneMaterials(object);
+          frameModel(object);
+          applyMaterialToModel();
+          scene.add(object);
+          setLoading("", false);
+          setStatus(`<span class="success-text">Loaded local FBX:</span> ${file.name}`, "success-text");
+        })
+        .catch((error) => {
+          console.error("Local FBX failed to load:", error);
+          useFallback(`The selected file could not be parsed as FBX. Try exporting it again from Blender as FBX binary or convert it to GLB later.`);
+        })
+        .finally(() => URL.revokeObjectURL(url));
+    }
+
+    function setColor(value) {
+      const safeColor = normalizeHexColor(value);
+      state.color = safeColor;
+      colorPicker.value = safeColor;
+      colorText.value = safeColor;
+      applyMaterialToModel();
+    }
+
+    function createPresets() {
+      presetGrid.innerHTML = "";
+      COLOR_PRESETS.forEach((preset) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "preset";
+        button.setAttribute("aria-label", `Set jacket color to ${preset.label}`);
+        button.innerHTML = `<span class="swatch" style="background:${preset.hex}"></span><span>${preset.label}</span>`;
+        button.addEventListener("click", () => setColor(preset.hex));
+        presetGrid.appendChild(button);
+      });
+    }
+
+    function createTextureDownload() {
+      const safeColor = normalizeHexColor(state.color);
+      const canvas = document.createElement("canvas");
+      canvas.width = 1024;
+      canvas.height = 1024;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      ctx.fillStyle = safeColor;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i < 35000; i += 1) {
+        const alpha = Math.random() * 0.06;
+        ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+        ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 1, 1);
+      }
+
+      ctx.fillStyle = "rgba(0,0,0,0.08)";
+      ctx.fillRect(0, 480, 1024, 8);
+      ctx.fillRect(508, 0, 8, 1024);
+
+      const link = document.createElement("a");
+      link.download = `manager-jacket-${safeColor.replace("#", "")}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+
+    colorPicker.addEventListener("input", (event) => setColor(event.target.value));
+    colorText.addEventListener("change", (event) => setColor(event.target.value));
+    localModelInput.addEventListener("change", (event) => loadLocalFbxFile(event.target.files?.[0]));
+
+    roughness.addEventListener("input", (event) => {
+      state.roughness = Number(event.target.value);
+      roughnessValue.textContent = state.roughness.toFixed(2);
+      applyMaterialToModel();
+    });
+
+    metalness.addEventListener("input", (event) => {
+      state.metalness = Number(event.target.value);
+      metalnessValue.textContent = state.metalness.toFixed(2);
+      applyMaterialToModel();
+    });
+
+    rotateButton.addEventListener("click", () => {
+      state.autoRotate = !state.autoRotate;
+      rotateButton.textContent = state.autoRotate ? "Stop Rotate" : "Start Rotate";
+    });
+
+    downloadButton.addEventListener("click", createTextureDownload);
+
+    window.addEventListener("resize", () => {
+      camera.aspect = viewer.clientWidth / viewer.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(viewer.clientWidth, viewer.clientHeight);
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const rotatingObject = state.model || state.fallbackModel;
+      if (state.autoRotate && rotatingObject) {
+        rotatingObject.rotation.y += 0.006;
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    createPresets();
+    loadModelFromPaths();
+    animate();
+  </script>
+</body>
+</html>
