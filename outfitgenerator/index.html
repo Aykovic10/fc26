@@ -1,322 +1,361 @@
-import React, { Suspense, useMemo, useRef, useState } from "react";
-import { Canvas, useFrame, useLoader } from "@react-three/fiber";
-import { OrbitControls, Environment, ContactShadows } from "@react-three/drei";
-import { FBXLoader } from "three-stdlib";
-import { motion } from "framer-motion";
-import { Download, RotateCcw, Shirt, Palette } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-
-// Since this page will live inside /outfitgenerator,
-// put your jacket model here: /outfitgenerator/models/jacket.fbx
-// Relative path keeps it working on GitHub Pages and custom domains.
-const MODEL_PATH = "./models/jacket.fbx";
-
-const COLOR_PRESETS = Object.freeze([
-  Object.freeze({ id: "black", label: "Black", hex: "#111111" }),
-  Object.freeze({ id: "navy", label: "Navy", hex: "#17233f" }),
-  Object.freeze({ id: "stone", label: "Stone", hex: "#b7afa0" }),
-  Object.freeze({ id: "olive", label: "Olive", hex: "#4f5b3a" }),
-  Object.freeze({ id: "wine", label: "Wine", hex: "#5b1f2a" }),
-  Object.freeze({ id: "cream", label: "Cream", hex: "#e8dfcf" }),
-]);
-
-function isValidHexColor(value) {
-  return typeof value === "string" && /^#[0-9A-Fa-f]{6}$/.test(value);
-}
-
-function normalizeHexColor(value, fallback = "#111111") {
-  if (isValidHexColor(value)) return value;
-  return fallback;
-}
-
-function validateColorPresets(presets) {
-  if (!Array.isArray(presets)) return false;
-
-  return presets.every(
-    (preset) =>
-      preset &&
-      typeof preset === "object" &&
-      typeof preset.id === "string" &&
-      preset.id.trim().length > 0 &&
-      typeof preset.label === "string" &&
-      preset.label.trim().length > 0 &&
-      isValidHexColor(preset.hex)
-  );
-}
-
-// Small built-in tests. They run only in development and help catch preset syntax/data mistakes.
-function runDevTests() {
-  console.assert(validateColorPresets(COLOR_PRESETS), "COLOR_PRESETS must be an array of valid preset objects.");
-  console.assert(isValidHexColor("#111111") === true, "Valid 6-digit hex colors should pass.");
-  console.assert(isValidHexColor("111111") === false, "Hex colors must start with #.");
-  console.assert(normalizeHexColor("bad", "#17233f") === "#17233f", "Invalid colors should fall back safely.");
-}
-
-if (typeof process !== "undefined" && process.env?.NODE_ENV !== "production") {
-  runDevTests();
-}
-
-function applyMaterialToMesh(mesh, color, roughness, metalness) {
-  const safeColor = normalizeHexColor(color);
-
-  if (!mesh.material) return;
-
-  if (Array.isArray(mesh.material)) {
-    mesh.material = mesh.material.map((material) => {
-      const clonedMaterial = material.clone();
-      if (clonedMaterial.color) clonedMaterial.color.set(safeColor);
-      clonedMaterial.roughness = roughness;
-      clonedMaterial.metalness = metalness;
-      clonedMaterial.needsUpdate = true;
-      return clonedMaterial;
-    });
-    return;
-  }
-
-  mesh.material = mesh.material.clone();
-  if (mesh.material.color) mesh.material.color.set(safeColor);
-  mesh.material.roughness = roughness;
-  mesh.material.metalness = metalness;
-  mesh.material.needsUpdate = true;
-}
-
-function JacketModel({ color, roughness, metalness, autoRotate }) {
-  const group = useRef(null);
-  const fbx = useLoader(FBXLoader, MODEL_PATH);
-
-  const clonedScene = useMemo(() => {
-    const clone = fbx.clone(true);
-
-    clone.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-        applyMaterialToMesh(child, color, roughness, metalness);
-      }
-    });
-
-    return clone;
-  }, [fbx, color, roughness, metalness]);
-
-  useFrame((_, delta) => {
-    if (autoRotate && group.current) {
-      group.current.rotation.y += delta * 0.35;
-    }
-  });
-
-  return <primitive ref={group} object={clonedScene} scale={1.9} position={[0, -1.25, 0]} />;
-}
-
-function EmptyModelFallback() {
-  return (
-    <mesh position={[0, 0, 0]} castShadow>
-      <capsuleGeometry args={[0.55, 1.7, 8, 24]} />
-      <meshStandardMaterial color="#222222" roughness={0.65} />
-    </mesh>
-  );
-}
-
-function JacketCanvas({ color, roughness, metalness, autoRotate }) {
-  return (
-    <Canvas shadows camera={{ position: [0, 0.25, 4], fov: 38 }}>
-      <ambientLight intensity={0.8} />
-      <directionalLight position={[4, 5, 5]} intensity={2.3} castShadow shadow-mapSize={[1024, 1024]} />
-      <directionalLight position={[-4, 2, -3]} intensity={0.75} />
-      <Suspense fallback={<EmptyModelFallback />}>
-        <JacketModel color={color} roughness={roughness} metalness={metalness} autoRotate={autoRotate} />
-        <Environment preset="city" />
-      </Suspense>
-      <ContactShadows position={[0, -1.45, 0]} opacity={0.35} scale={5} blur={2.4} far={3} />
-      <OrbitControls enablePan={false} minDistance={2.2} maxDistance={6} />
-    </Canvas>
-  );
-}
-
-function createTextureDownload(color) {
-  const safeColor = normalizeHexColor(color);
-  const canvas = document.createElement("canvas");
-  canvas.width = 1024;
-  canvas.height = 1024;
-  const ctx = canvas.getContext("2d");
-
-  if (!ctx) return;
-
-  ctx.fillStyle = safeColor;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // Simple fabric/noise texture placeholder.
-  // Later we replace this with the real jacket UV template.
-  for (let i = 0; i < 35000; i += 1) {
-    const alpha = Math.random() * 0.06;
-    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
-    ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 1, 1);
-  }
-
-  ctx.fillStyle = "rgba(0,0,0,0.08)";
-  ctx.fillRect(0, 480, 1024, 8);
-  ctx.fillRect(508, 0, 8, 1024);
-
-  const link = document.createElement("a");
-  link.download = `manager-jacket-${safeColor.replace("#", "")}.png`;
-  link.href = canvas.toDataURL("image/png");
-  link.click();
-}
-
-export default function ManagerJacketCreator() {
-  const [color, setColor] = useState(COLOR_PRESETS[0].hex);
-  const [roughness, setRoughness] = useState(0.72);
-  const [metalness, setMetalness] = useState(0.02);
-  const [autoRotate, setAutoRotate] = useState(true);
-
-  const safeColor = normalizeHexColor(color, COLOR_PRESETS[0].hex);
-
-  return (
-    <div className="min-h-screen bg-neutral-950 text-white">
-      <div className="mx-auto grid min-h-screen max-w-7xl grid-cols-1 gap-6 px-4 py-6 lg:grid-cols-[1fr_380px] lg:px-8">
-        <motion.main
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45 }}
-          className="overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-neutral-900 to-black shadow-2xl"
-        >
-          <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-            <div>
-              <p className="text-sm text-white/50">FC26 Manager Outfit Creator</p>
-              <h1 className="text-2xl font-semibold tracking-tight">Jacket Builder</h1>
-            </div>
-            <Button
-              variant="secondary"
-              className="rounded-2xl bg-white/10 text-white hover:bg-white/15"
-              onClick={() => setAutoRotate((value) => !value)}
-            >
-              <RotateCcw className="mr-2 h-4 w-4" />
-              {autoRotate ? "Stop" : "Rotate"}
-            </Button>
-          </div>
-
-          <div className="h-[72vh] min-h-[520px]">
-            <JacketCanvas color={safeColor} roughness={roughness} metalness={metalness} autoRotate={autoRotate} />
-          </div>
-        </motion.main>
-
-        <motion.aside
-          initial={{ opacity: 0, x: 18 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.45, delay: 0.1 }}
-          className="flex flex-col gap-4"
-        >
-          <Card className="rounded-[2rem] border-white/10 bg-white/[0.04] text-white shadow-2xl backdrop-blur">
-            <CardContent className="p-5">
-              <div className="mb-5 flex items-center gap-3">
-                <div className="rounded-2xl bg-white/10 p-3">
-                  <Shirt className="h-5 w-5" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold">One Jacket MVP</h2>
-                  <p className="text-sm text-white/50">Change color, material feel, preview, export.</p>
-                </div>
-              </div>
-
-              <label className="mb-2 block text-sm text-white/60">Custom color</label>
-              <div className="mb-5 flex gap-3">
-                <input
-                  type="color"
-                  value={safeColor}
-                  onChange={(event) => setColor(event.target.value)}
-                  className="h-12 w-16 cursor-pointer rounded-xl border border-white/10 bg-transparent"
-                />
-                <input
-                  value={color}
-                  onChange={(event) => setColor(event.target.value)}
-                  onBlur={(event) => setColor(normalizeHexColor(event.target.value, COLOR_PRESETS[0].hex))}
-                  placeholder="#111111"
-                  className="h-12 flex-1 rounded-xl border border-white/10 bg-black/30 px-4 text-sm outline-none focus:border-white/30"
-                />
-              </div>
-
-              <div className="mb-5 grid grid-cols-3 gap-2">
-                {COLOR_PRESETS.map((preset) => (
-                  <button
-                    type="button"
-                    key={preset.id}
-                    onClick={() => setColor(preset.hex)}
-                    className="rounded-2xl border border-white/10 bg-black/25 p-3 text-left transition hover:bg-white/10"
-                    aria-label={`Set jacket color to ${preset.label}`}
-                  >
-                    <span
-                      className="mb-2 block h-8 rounded-xl border border-white/10"
-                      style={{ backgroundColor: preset.hex }}
-                    />
-                    <span className="text-xs text-white/70">{preset.label}</span>
-                  </button>
-                ))}
-              </div>
-
-              <div className="space-y-5">
-                <div>
-                  <div className="mb-2 flex justify-between text-sm">
-                    <span className="text-white/60">Fabric roughness</span>
-                    <span className="text-white/40">{roughness.toFixed(2)}</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    value={roughness}
-                    onChange={(event) => setRoughness(Number(event.target.value))}
-                    className="w-full"
-                  />
-                </div>
-
-                <div>
-                  <div className="mb-2 flex justify-between text-sm">
-                    <span className="text-white/60">Slight shine</span>
-                    <span className="text-white/40">{metalness.toFixed(2)}</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="0.35"
-                    step="0.01"
-                    value={metalness}
-                    onChange={(event) => setMetalness(Number(event.target.value))}
-                    className="w-full"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-[2rem] border-white/10 bg-white/[0.04] text-white shadow-2xl backdrop-blur">
-            <CardContent className="p-5">
-              <div className="mb-4 flex items-center gap-3">
-                <div className="rounded-2xl bg-white/10 p-3">
-                  <Palette className="h-5 w-5" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold">Export</h2>
-                  <p className="text-sm text-white/50">Downloads a starter texture PNG.</p>
-                </div>
-              </div>
-
-              <Button
-                className="h-12 w-full rounded-2xl bg-white text-black hover:bg-white/90"
-                onClick={() => createTextureDownload(safeColor)}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Download Jacket Texture
-              </Button>
-
-              <p className="mt-4 text-xs leading-5 text-white/40">
-                This export currently creates a clean placeholder texture. Once you give me the real jacket UV layout,
-                we can make the generated PNG match the exact FC26 manager jacket template.
-              </p>
-            </CardContent>
-          </Card>
-        </motion.aside>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FC26 Jacket RGB Mask Test</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; font-family: Arial, sans-serif; background: #050505; color: white; }
+    .page { min-height: 100vh; display: grid; grid-template-columns: 1fr 360px; gap: 24px; padding: 24px; }
+    .viewer-card, .panel-card { border: 1px solid rgba(255,255,255,.1); border-radius: 24px; overflow: hidden; background: linear-gradient(135deg,#171717,#050505); box-shadow: 0 20px 60px rgba(0,0,0,.45); }
+    .topbar { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,.1); }
+    .viewer { height: calc(100vh - 120px); min-height: 520px; position: relative; }
+    canvas { display: block; width: 100%; height: 100%; }
+    .sidebar { display: flex; flex-direction: column; gap: 18px; }
+    .panel-card { padding: 20px; }
+    h1,h2,p { margin: 0; }
+    .eyebrow { color: rgba(255,255,255,.55); font-size: 14px; margin-bottom: 4px; }
+    .muted { color: rgba(255,255,255,.55); font-size: 14px; line-height: 1.5; margin-top: 6px; }
+    .field { margin-top: 18px; }
+    label { display: block; font-size: 14px; color: rgba(255,255,255,.7); margin-bottom: 8px; }
+    input[type="color"] { width: 64px; height: 46px; border: 1px solid rgba(255,255,255,.15); border-radius: 12px; background: transparent; cursor: pointer; }
+    input[type="file"], input[type="range"] { width: 100%; }
+    button { min-height: 46px; border: 0; border-radius: 14px; cursor: pointer; font-weight: 700; }
+    .secondary-button { padding: 0 16px; background: rgba(255,255,255,.1); color: white; }
+    .main-button { width: 100%; background: white; color: black; }
+    .status { position: absolute; left: 18px; right: 18px; bottom: 18px; padding: 10px 12px; border-radius: 12px; background: rgba(0,0,0,.55); color: rgba(255,255,255,.75); font-size: 13px; line-height: 1.45; }
+    .slider-head { display: flex; justify-content: space-between; font-size: 14px; color: rgba(255,255,255,.7); margin-bottom: 6px; }
+    .small-note { margin-top: 10px; color: rgba(255,255,255,.42); font-size: 12px; line-height: 1.5; }
+    @media (max-width: 900px) { .page { grid-template-columns: 1fr; } .viewer { height: 58vh; } }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="viewer-card">
+      <div class="topbar">
+        <div>
+          <p class="eyebrow">FC26 Outfit Generator</p>
+          <h1>RGB Mask Jacket Test</h1>
+        </div>
+        <button id="rotateButton" class="secondary-button">Start Rotate</button>
       </div>
-    </div>
-  );
-}
+      <div id="viewer" class="viewer">
+        <div id="status" class="status">Loading model and mask...</div>
+      </div>
+    </section>
+
+    <aside class="sidebar">
+      <section class="panel-card">
+        <h2>RGB Part Colors</h2>
+        <p class="muted">These color pickers recolor your RGB mask zones.</p>
+
+        <div class="field"><label>Main body: RED in mask</label><input id="bodyColor" type="color" value="#d8001d" /></div>
+        <div class="field"><label>Upper panels: BLUE in mask</label><input id="upperColor" type="color" value="#0b2cff" /></div>
+        <div class="field"><label>Bottom trim: YELLOW in mask</label><input id="trimColor" type="color" value="#d6d600" /></div>
+        <div class="field"><label>Small strips: CYAN in mask</label><input id="detailColor" type="color" value="#21d8d8" /></div>
+        <div class="field"><label>Accessories / zipper: MAGENTA in mask</label><input id="hardwareColor" type="color" value="#d100ff" /></div>
+
+        <div class="field">
+          <label>Normal map, optional</label>
+          <input id="normalMapInput" type="file" accept="image/png,image/jpeg,image/webp" />
+        </div>
+
+        <div class="field">
+          <div class="slider-head"><span>Roughness</span><span id="roughnessValue">0.72</span></div>
+          <input id="roughness" type="range" min="0" max="1" step="0.01" value="0.72" />
+        </div>
+
+        <div class="field">
+          <div class="slider-head"><span>Metalness</span><span id="metalnessValue">0.02</span></div>
+          <input id="metalness" type="range" min="0" max="0.35" step="0.01" value="0.02" />
+        </div>
+
+        <p class="small-note">Model path: <strong>./models/jacket.fbx</strong><br>Mask path: <strong>./templates/jacket_idmask.png</strong></p>
+      </section>
+
+      <section class="panel-card">
+        <h2>Export</h2>
+        <p class="muted" style="margin-bottom:16px;">Downloads the recolored texture PNG.</p>
+        <button id="downloadButton" class="main-button">Download Texture PNG</button>
+      </section>
+    </aside>
+  </main>
+
+  <script type="module">
+    import * as THREE from "https://esm.sh/three@0.160.0";
+    import { OrbitControls } from "https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js";
+    import { FBXLoader } from "https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js";
+
+    const MODEL_PATH = "./models/jacket.fbx";
+    const MASK_PATH = "./templates/jacket_idmask.png";
+
+    const state = {
+      autoRotate: false,
+      roughness: 0.72,
+      metalness: 0.02,
+      bodyColor: "#d8001d",
+      upperColor: "#0b2cff",
+      trimColor: "#d6d600",
+      detailColor: "#21d8d8",
+      hardwareColor: "#d100ff",
+      model: null,
+      generatedTexture: null,
+      normalMap: null,
+      maskImage: null
+    };
+
+    function testHelpers() {
+      console.assert(MODEL_PATH.endsWith(".fbx"), "Model path must point to an FBX file.");
+      console.assert(MASK_PATH.endsWith(".png"), "Mask path must point to a PNG file.");
+      console.assert(hexToRgb("#ff0000").r === 255, "hexToRgb should parse red correctly.");
+      console.assert(isNearColor(250, 5, 4, { r: 255, g: 0, b: 0 }, 10), "isNearColor should accept close red values.");
+    }
+
+    const viewer = document.getElementById("viewer");
+    const status = document.getElementById("status");
+    const rotateButton = document.getElementById("rotateButton");
+    const downloadButton = document.getElementById("downloadButton");
+    const bodyColorInput = document.getElementById("bodyColor");
+    const upperColorInput = document.getElementById("upperColor");
+    const trimColorInput = document.getElementById("trimColor");
+    const detailColorInput = document.getElementById("detailColor");
+    const hardwareColorInput = document.getElementById("hardwareColor");
+    const normalMapInput = document.getElementById("normalMapInput");
+    const roughnessInput = document.getElementById("roughness");
+    const metalnessInput = document.getElementById("metalness");
+    const roughnessValue = document.getElementById("roughnessValue");
+    const metalnessValue = document.getElementById("metalnessValue");
+
+    function setStatus(text) { status.innerHTML = text; }
+
+    function hexToRgb(hex) {
+      const clean = hex.replace("#", "");
+      return { r: parseInt(clean.slice(0,2), 16), g: parseInt(clean.slice(2,4), 16), b: parseInt(clean.slice(4,6), 16) };
+    }
+
+    function isNearColor(r, g, b, target, tolerance = 30) {
+      return Math.abs(r - target.r) <= tolerance && Math.abs(g - target.g) <= tolerance && Math.abs(b - target.b) <= tolerance;
+    }
+
+    function loadImage(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error(`Image failed to load: ${src}`));
+        img.src = src;
+      });
+    }
+
+    testHelpers();
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color("#050505");
+
+    const camera = new THREE.PerspectiveCamera(38, viewer.clientWidth / viewer.clientHeight, 0.1, 100);
+    camera.position.set(0, 0.35, 4);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(viewer.clientWidth, viewer.clientHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    viewer.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.enablePan = false;
+    controls.minDistance = 2.2;
+    controls.maxDistance = 6;
+
+    scene.add(new THREE.AmbientLight("#ffffff", 0.8));
+    const keyLight = new THREE.DirectionalLight("#ffffff", 2.3);
+    keyLight.position.set(4, 5, 5);
+    keyLight.castShadow = true;
+    scene.add(keyLight);
+    const fillLight = new THREE.DirectionalLight("#ffffff", 0.75);
+    fillLight.position.set(-4, 2, -3);
+    scene.add(fillLight);
+
+    const floor = new THREE.Mesh(new THREE.CircleGeometry(2.25, 64), new THREE.ShadowMaterial({ opacity: 0.28 }));
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -1.45;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    function frameModel(object) {
+      const box = new THREE.Box3().setFromObject(object);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+      const maxSize = Math.max(size.x, size.y, size.z) || 1;
+      const scale = 2.8 / maxSize;
+      object.scale.setScalar(scale);
+      object.position.x = -center.x * scale;
+      object.position.y = -center.y * scale - 0.05;
+      object.position.z = -center.z * scale;
+    }
+
+    function buildTextureFromMask() {
+      if (!state.maskImage) return null;
+      const canvas = document.createElement("canvas");
+      canvas.width = state.maskImage.width;
+      canvas.height = state.maskImage.height;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      ctx.drawImage(state.maskImage, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+
+      const colors = {
+        red: hexToRgb(state.bodyColor),
+        blue: hexToRgb(state.upperColor),
+        yellow: hexToRgb(state.trimColor),
+        cyan: hexToRgb(state.detailColor),
+        magenta: hexToRgb(state.hardwareColor)
+      };
+
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
+        if (a === 0) continue;
+
+        let replacement = null;
+        if (isNearColor(r, g, b, { r:255, g:0, b:0 })) replacement = colors.red;
+        else if (isNearColor(r, g, b, { r:0, g:0, b:255 })) replacement = colors.blue;
+        else if (isNearColor(r, g, b, { r:255, g:255, b:0 })) replacement = colors.yellow;
+        else if (isNearColor(r, g, b, { r:0, g:255, b:255 })) replacement = colors.cyan;
+        else if (isNearColor(r, g, b, { r:255, g:0, b:255 })) replacement = colors.magenta;
+        else replacement = { r: 0, g: 0, b: 0 };
+
+        data[i] = replacement.r;
+        data[i + 1] = replacement.g;
+        data[i + 2] = replacement.b;
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+      return canvas;
+    }
+
+    function updateGeneratedTexture() {
+      const canvas = buildTextureFromMask();
+      if (!canvas) return;
+      if (state.generatedTexture) state.generatedTexture.dispose();
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.flipY = true;
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.needsUpdate = true;
+      state.generatedTexture = texture;
+      applyMaterialToModel();
+    }
+
+    function applyMaterialToModel() {
+      if (!state.model) return;
+      state.model.traverse((child) => {
+        if (!child.isMesh || !child.material) return;
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        materials.forEach((material) => {
+          if ("map" in material && state.generatedTexture) {
+            material.map = state.generatedTexture;
+            if (material.color) material.color.set("#ffffff");
+          }
+          if ("normalMap" in material && state.normalMap) {
+            material.normalMap = state.normalMap;
+            material.normalScale = new THREE.Vector2(1, 1);
+          }
+          if ("roughness" in material) material.roughness = state.roughness;
+          if ("metalness" in material) material.metalness = state.metalness;
+          material.needsUpdate = true;
+        });
+      });
+    }
+
+    async function loadMask() {
+      state.maskImage = await loadImage(MASK_PATH);
+      updateGeneratedTexture();
+    }
+
+    async function loadModel() {
+      return new Promise((resolve, reject) => {
+        const loader = new FBXLoader();
+        loader.load(MODEL_PATH, (object) => {
+          object.traverse((child) => {
+            if (!child.isMesh) return;
+            child.castShadow = true;
+            child.receiveShadow = true;
+            if (child.material) child.material = Array.isArray(child.material) ? child.material.map((mat) => mat.clone()) : child.material.clone();
+          });
+          frameModel(object);
+          state.model = object;
+          scene.add(object);
+          applyMaterialToModel();
+          resolve(object);
+        }, undefined, reject);
+      });
+    }
+
+    function loadNormalMapFile(file) {
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      const loader = new THREE.TextureLoader();
+      loader.load(url, (texture) => {
+        if (state.normalMap) state.normalMap.dispose();
+        texture.flipY = true;
+        texture.colorSpace = THREE.NoColorSpace;
+        texture.needsUpdate = true;
+        state.normalMap = texture;
+        applyMaterialToModel();
+        setStatus(`Normal map loaded: ${file.name}`);
+        URL.revokeObjectURL(url);
+      }, undefined, () => {
+        setStatus("Normal map failed to load.");
+        URL.revokeObjectURL(url);
+      });
+    }
+
+    function downloadTexture() {
+      const canvas = buildTextureFromMask();
+      if (!canvas) return;
+      const link = document.createElement("a");
+      link.download = "jacket_generated_texture.png";
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+
+    bodyColorInput.addEventListener("input", e => { state.bodyColor = e.target.value; updateGeneratedTexture(); });
+    upperColorInput.addEventListener("input", e => { state.upperColor = e.target.value; updateGeneratedTexture(); });
+    trimColorInput.addEventListener("input", e => { state.trimColor = e.target.value; updateGeneratedTexture(); });
+    detailColorInput.addEventListener("input", e => { state.detailColor = e.target.value; updateGeneratedTexture(); });
+    hardwareColorInput.addEventListener("input", e => { state.hardwareColor = e.target.value; updateGeneratedTexture(); });
+    roughnessInput.addEventListener("input", e => { state.roughness = Number(e.target.value); roughnessValue.textContent = state.roughness.toFixed(2); applyMaterialToModel(); });
+    metalnessInput.addEventListener("input", e => { state.metalness = Number(e.target.value); metalnessValue.textContent = state.metalness.toFixed(2); applyMaterialToModel(); });
+    normalMapInput.addEventListener("change", e => loadNormalMapFile(e.target.files?.[0]));
+    rotateButton.addEventListener("click", () => { state.autoRotate = !state.autoRotate; rotateButton.textContent = state.autoRotate ? "Stop Rotate" : "Start Rotate"; });
+    downloadButton.addEventListener("click", downloadTexture);
+
+    window.addEventListener("resize", () => {
+      camera.aspect = viewer.clientWidth / viewer.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(viewer.clientWidth, viewer.clientHeight);
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+      if (state.autoRotate && state.model) state.model.rotation.y += 0.006;
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    async function init() {
+      try {
+        await loadMask();
+        await loadModel();
+        setStatus(`Loaded model: ${MODEL_PATH}<br>Loaded mask: ${MASK_PATH}<br>RGB recolor test is ready.`);
+      } catch (error) {
+        console.error(error);
+        setStatus(`Something failed to load.<br>Check:<br>${MODEL_PATH}<br>${MASK_PATH}`);
+      }
+    }
+
+    init();
+    animate();
+  </script>
+</body>
+</html>
