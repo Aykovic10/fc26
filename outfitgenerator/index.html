@@ -88,8 +88,8 @@
         </div>
 
         <div class="field">
-          <div class="slider-head"><span>Metalness</span><span id="metalnessValue">0.02</span></div>
-          <input id="metalness" type="range" min="0" max="0.35" step="0.01" value="0.02" />
+          <div class="slider-head"><span>Metalness</span><span id="metalnessValue">0.00</span></div>
+          <input id="metalness" type="range" min="0" max="0" step="0.01" value="0" />
         </div>
       </section>
 
@@ -470,24 +470,40 @@
       applyMaterialToModel();
     }
 
+    function createMatteFabricMaterial() {
+      return new THREE.MeshStandardMaterial({
+        color: "#ffffff",
+        map: state.generatedTexture || null,
+        normalMap: state.normalMap || null,
+        roughness: Number(state.roughness),
+        metalness: 0,
+        envMapIntensity: 0.03
+      });
+    }
+
     function applyMaterialToModel() {
       if (!state.model) return;
 
       state.model.traverse((child) => {
-        if (!child.isMesh || !child.material) return;
+        if (!child.isMesh) return;
+
+        // FBX files often import with shiny Phong/Lambert/custom materials.
+        // For clothing, we replace them with a clean matte fabric material.
+        if (!child.userData.fabricMaterialForced) {
+          child.material = createMatteFabricMaterial();
+          child.userData.fabricMaterialForced = true;
+        }
+
         const materials = Array.isArray(child.material) ? child.material : [child.material];
 
         materials.forEach((material) => {
-          if ("map" in material && state.generatedTexture) {
-            material.map = state.generatedTexture;
-            if (material.color) material.color.set("#ffffff");
-          }
-          if ("normalMap" in material && state.normalMap) {
-            material.normalMap = state.normalMap;
-            material.normalScale = new THREE.Vector2(1, 1);
-          }
-          if ("roughness" in material) material.roughness = state.roughness;
-          if ("metalness" in material) material.metalness = state.metalness;
+          material.map = state.generatedTexture || null;
+          material.normalMap = state.normalMap || null;
+          material.normalScale = new THREE.Vector2(1, 1);
+          material.color.set("#ffffff");
+          material.roughness = Number(state.roughness);
+          material.metalness = 0;
+          material.envMapIntensity = 0.03;
           material.needsUpdate = true;
         });
       });
@@ -563,8 +579,9 @@
       const maskPath = resolveAssetPath(config.idMask, configUrl);
       const normalPath = resolveAssetPath(config.normalMap, configUrl);
 
-      state.roughness = Number(config.material?.roughness ?? 0.72);
-      state.metalness = Number(config.material?.metalness ?? 0.02);
+      state.roughness = Number(config.material?.roughness ?? 0.95);
+      // Clothing should not use metalness. Keep this forced to 0 even if an old config says otherwise.
+      state.metalness = 0;
       roughnessInput.value = state.roughness;
       metalnessInput.value = state.metalness;
       roughnessValue.textContent = state.roughness.toFixed(2);
@@ -601,8 +618,10 @@
     });
 
     metalnessInput.addEventListener("input", (event) => {
-      state.metalness = Number(event.target.value);
-      metalnessValue.textContent = state.metalness.toFixed(2);
+      // For fabric, metalness stays locked to 0. This slider is kept only so the UI doesn't break.
+      state.metalness = 0;
+      event.target.value = 0;
+      metalnessValue.textContent = "0.00";
       applyMaterialToModel();
     });
 
