@@ -1,0 +1,9 @@
+{
+  "outfits": [
+    {
+      "id": "nike-strike-pro-drill-top",
+      "name": "Nike Strike Pro Drill Top",
+      "config": "./outfits/nike-strike-pro-drill-top/config.json"
+    }
+  ]
+}
