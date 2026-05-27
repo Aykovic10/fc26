@@ -24,11 +24,6 @@
       "maskColor": "#FF0000",
       "defaultColor": "#111111"
     },
-    "sleeves": {
-      "label": "Sleeves",
-      "maskColor": "#00ffff",
-      "defaultColor": "#110011"
-    },
     "stripe": {
       "label": "Stripe",
       "maskColor": "#0000FF",
