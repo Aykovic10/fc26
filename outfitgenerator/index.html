@@ -109,7 +109,10 @@
     import { OrbitControls } from "https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js";
     import { FBXLoader } from "https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js";
 
-    const MANIFEST_PATH = "./outfits/manifest.json";
+    const MANIFEST_PATHS = [
+      "./outfits/manifest.json",
+      "outfits/manifest.json"
+    ];
 
     // Fallback keeps the page working even before you create outfits/manifest.json.
     const FALLBACK_MANIFEST = {
@@ -213,7 +216,7 @@
     function setStatus(text) { status.innerHTML = text; }
 
     function tests() {
-      console.assert(MANIFEST_PATH.endsWith("manifest.json"), "Manifest path should point to manifest.json.");
+      console.assert(MANIFEST_PATHS.every((path) => path.endsWith("manifest.json")), "Manifest paths should point to manifest.json.");
       console.assert(hexToRgb("#ff0000").r === 255, "hexToRgb should parse red.");
       console.assert(isNearColor(250, 5, 4, { r: 255, g: 0, b: 0 }, 10), "isNearColor should accept near red.");
       console.assert(validateConfig(FALLBACK_CONFIGS["./config/legacy-jacket.json"]), "Fallback config must be valid.");
@@ -540,13 +543,28 @@
     }
 
     async function loadManifest() {
-      try {
-        state.manifest = await loadJson(MANIFEST_PATH);
-        setStatus("Loaded outfits manifest.");
-      } catch (error) {
-        console.warn("Manifest not found. Using fallback legacy config.", error);
+      const errors = [];
+
+      for (const manifestPath of MANIFEST_PATHS) {
+        try {
+          setStatus(`Trying manifest:<br>${manifestPath}`);
+          state.manifest = await loadJson(`${manifestPath}?v=${Date.now()}`);
+          setStatus(`Loaded outfits manifest:<br>${manifestPath}`);
+          break;
+        } catch (error) {
+          console.warn(`Manifest failed: ${manifestPath}`, error);
+          errors.push(`${manifestPath}: ${error.message}`);
+        }
+      }
+
+      if (!state.manifest) {
+        console.warn("Manifest not found. Using fallback legacy config.", errors);
         state.manifest = FALLBACK_MANIFEST;
-        setStatus("Manifest not found. Using fallback legacy test jacket.");
+        setStatus(`Manifest not found. Using fallback legacy test jacket.<br>${errors.join("<br>")}`);
+      }
+
+      if (!state.manifest.outfits || !Array.isArray(state.manifest.outfits) || state.manifest.outfits.length === 0) {
+        throw new Error("manifest.json loaded, but it has no outfits array.");
       }
 
       outfitSelect.innerHTML = "";
@@ -560,7 +578,7 @@
 
     async function loadConfig(configUrl) {
       if (FALLBACK_CONFIGS[configUrl]) return FALLBACK_CONFIGS[configUrl];
-      return loadJson(configUrl);
+      return loadJson(`${configUrl}?v=${Date.now()}`);
     }
 
     async function loadOutfit(configUrl) {
@@ -628,7 +646,12 @@
       const normalCanvas = buildNormalMapDownloadCanvas();
       if (normalCanvas) {
         // Small delay helps browsers handle the second download cleanly.
-        setTimeout(() => downloadCanva
+        setTimeout(() => downloadCanvas(normalCanvas, `${baseName}_normal.png`), 250);
+        setStatus(`Downloaded color texture and normal map for ${state.config.name}.`);
+      } else {
+        setStatus(`Downloaded color texture. No normal map was found in this outfit config.`);
+      }
+    }
 
     roughnessInput.addEventListener("input", (event) => {
       state.roughness = Number(event.target.value);
