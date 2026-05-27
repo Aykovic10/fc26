@@ -191,6 +191,7 @@
       display: block;
       width: 100%;
       height: 100%;
+      cursor: crosshair;
     }
 
     .status {
@@ -294,6 +295,18 @@
       border-radius: 12px;
       background: rgba(255,255,255,.035);
       margin-top: 7px;
+      transition: .15s ease;
+    }
+
+    .zone-slot:hover {
+      border-color: rgba(0,230,106,.35);
+      background: rgba(255,255,255,.06);
+    }
+
+    .zone-slot.selected {
+      border-color: var(--green);
+      background: rgba(0,230,106,.12);
+      box-shadow: 0 0 0 1px rgba(0,230,106,.25) inset;
     }
 
     .zone-info {
@@ -496,7 +509,7 @@
         <details class="panel-card" open>
           <summary>Colors</summary>
           <div class="panel-inner">
-            <p class="muted">Automatically created from config.json.</p>
+            <p class="muted">Click a part on the 3D outfit or use these color rows.</p>
             <div id="colorControls"></div>
           </div>
         </details>
@@ -573,7 +586,21 @@
       }
     };
 
-    const state = { manifest: null, config: null, currentConfigUrl: null, autoRotate: false, model: null, generatedTexture: null, maskImage: null, colorValues: {}, logos: {} };
+    const state = {
+      manifest: null,
+      config: null,
+      currentConfigUrl: null,
+      autoRotate: false,
+      model: null,
+      generatedTexture: null,
+      maskImage: null,
+      maskCanvas: null,
+      maskCtx: null,
+      selectedZoneId: null,
+      colorValues: {},
+      colorInputs: {},
+      logos: {}
+    };
 
     const viewer = document.getElementById("viewer");
     const status = document.getElementById("status");
@@ -588,6 +615,8 @@
     const resetButton = document.getElementById("resetButton");
 
     let scene, camera, renderer, controls;
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
 
     function setStatus(text) { status.innerHTML = text; }
     function hexToRgb(hex) { const clean = String(hex || "#000000").replace("#", ""); return { r: parseInt(clean.slice(0, 2), 16), g: parseInt(clean.slice(2, 4), 16), b: parseInt(clean.slice(4, 6), 16) }; }
@@ -608,6 +637,7 @@
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.shadowMap.enabled = false;
       viewer.appendChild(renderer.domElement);
+      renderer.domElement.addEventListener("click", handleViewerClick);
       controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
       controls.enablePan = false;
@@ -634,13 +664,26 @@
     function createColorControls() {
       colorControls.innerHTML = "";
       state.colorValues = {};
+      state.colorInputs = {};
+
       Object.entries(state.config.colorZones).forEach(([zoneId, zone]) => {
         const defaultColor = isValidHex(zone.defaultColor) ? zone.defaultColor : "#111111";
         state.colorValues[zoneId] = defaultColor;
+
         const wrapper = document.createElement("div");
         wrapper.className = "zone-slot";
+        wrapper.dataset.zoneId = zoneId;
         wrapper.innerHTML = `<div class="zone-info"><strong>${zone.label || zoneId}</strong><span>${zone.maskColor}</span></div><input type="color" value="${defaultColor}" />`;
-        wrapper.querySelector("input").addEventListener("input", (event) => { state.colorValues[zoneId] = event.target.value; updateGeneratedTexture(); });
+
+        const input = wrapper.querySelector("input");
+        state.colorInputs[zoneId] = input;
+
+        input.addEventListener("input", (event) => {
+          state.colorValues[zoneId] = event.target.value;
+          updateGeneratedTexture();
+        });
+
+        wrapper.addEventListener("click", () => selectColorZone(zoneId, true));
         colorControls.appendChild(wrapper);
       });
     }
@@ -689,7 +732,7 @@
       const scale = Number(logo.scale || 1);
 
       // Slot is a bounding box. The uploaded logo fits inside it without distortion.
-      // x/y are the TOP-LEFT of the slot box in pixels.
+      // x/y are the CENTER of the slot box in pixels, matching Photoshop center coordinates.
       const boxWidth = Number(slot.width) * scale;
       const boxHeight = Number(slot.height || slot.width) * scale;
 
@@ -710,17 +753,96 @@
       }
 
       // Center logo inside the slot box.
-      const boxX = Number(slot.x) - boxWidth / 2;
-      const boxY = Number(slot.y) - boxHeight / 2;
-
-      const drawX = boxX + (boxWidth - drawWidth) / 2;
-      const drawY = boxY + (boxHeight - drawHeight) / 2;
+      const drawX = Number(slot.x) + (boxWidth - drawWidth) / 2;
+      const drawY = Number(slot.y) + (boxHeight - drawHeight) / 2;
 
       ctx.save();
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
       ctx.drawImage(logo.image, drawX, drawY, drawWidth, drawHeight);
       ctx.restore();
+    }
+
+    function prepareMaskSampler() {
+      if (!state.maskImage || !state.config) return;
+
+      const outWidth = state.config.output.width || state.maskImage.width;
+      const outHeight = state.config.output.height || state.maskImage.height;
+      state.maskCanvas = document.createElement("canvas");
+      state.maskCanvas.width = outWidth;
+      state.maskCanvas.height = outHeight;
+      state.maskCtx = state.maskCanvas.getContext("2d", { willReadFrequently: true });
+      state.maskCtx.drawImage(state.maskImage, 0, 0, outWidth, outHeight);
+    }
+
+    function findZoneIdByMaskPixel(r, g, b) {
+      for (const [zoneId, zone] of Object.entries(state.config.colorZones)) {
+        const target = hexToRgb(zone.maskColor);
+        if (isNearColor(r, g, b, target, 30)) return zoneId;
+      }
+      return null;
+    }
+
+    function getZoneIdFromUv(uv) {
+      if (!uv || !state.maskCtx || !state.config) return null;
+
+      const width = state.maskCanvas.width;
+      const height = state.maskCanvas.height;
+      const x = Math.max(0, Math.min(width - 1, Math.floor(uv.x * width)));
+
+      // Match the displayed texture orientation.
+      const yValue = state.config.output.flipY ? 1 - uv.y : uv.y;
+      const y = Math.max(0, Math.min(height - 1, Math.floor(yValue * height)));
+
+      const pixel = state.maskCtx.getImageData(x, y, 1, 1).data;
+      return findZoneIdByMaskPixel(pixel[0], pixel[1], pixel[2]);
+    }
+
+    function selectColorZone(zoneId, openPicker = false) {
+      if (!zoneId || !state.colorInputs[zoneId]) return;
+
+      state.selectedZoneId = zoneId;
+      document.querySelectorAll(".zone-slot.selected").forEach((item) => item.classList.remove("selected"));
+
+      const slot = colorControls.querySelector(`[data-zone-id="${zoneId}"]`);
+      if (slot) {
+        slot.classList.add("selected");
+        slot.scrollIntoView({ block: "center", behavior: "smooth" });
+      }
+
+      const zone = state.config.colorZones[zoneId];
+      setStatus(`Selected color zone: ${zone?.label || zoneId}. Change it from the sidebar color picker.`);
+
+      if (openPicker) {
+        state.colorInputs[zoneId].focus();
+        setTimeout(() => state.colorInputs[zoneId].click(), 0);
+      }
+    }
+
+    function handleViewerClick(event) {
+      if (!state.model || !camera || !renderer) return;
+
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(pointer, camera);
+      const meshes = [];
+      state.model.traverse((child) => { if (child.isMesh) meshes.push(child); });
+      const hits = raycaster.intersectObjects(meshes, false);
+
+      if (!hits.length || !hits[0].uv) {
+        setStatus("No editable color zone found there.");
+        return;
+      }
+
+      const zoneId = getZoneIdFromUv(hits[0].uv);
+      if (!zoneId) {
+        setStatus("Clicked area is not mapped to an editable RGB mask color.");
+        return;
+      }
+
+      selectColorZone(zoneId, true);
     }
 
     function buildTextureFromMask() {
@@ -777,10 +899,11 @@
       createColorControls();
       createLogoControls();
       state.maskImage = await loadImage(maskPath);
+      prepareMaskSampler();
       state.model = await loadModel(modelPath);
       scene.add(state.model);
       updateGeneratedTexture();
-      setStatus(`Loaded: ${config.name}<br>${modelPath}<br>${maskPath}<br>Preview: soft studio lighting, no metalness, no normal map.`);
+      setStatus(`Loaded: ${config.name}<br>${modelPath}<br>${maskPath}<br>Click any colored part on the 3D outfit to edit that color zone.`);
     }
 
     function downloadTexture() { const canvas = buildTextureFromMask(); if (!canvas || !state.config) return; const link = document.createElement("a"); link.download = `${state.config.id || "outfit"}_generated_texture.png`; link.href = canvas.toDataURL("image/png"); link.click(); }
