@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FC26 Jacket Outfit Generator</title>
+  <title>FC26 Outfit Generator</title>
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; min-height: 100vh; font-family: Arial, sans-serif; background: #050505; color: white; }
-    .page { min-height: 100vh; display: grid; grid-template-columns: 1fr 380px; gap: 24px; padding: 24px; }
+    .page { min-height: 100vh; display: grid; grid-template-columns: 1fr 390px; gap: 24px; padding: 24px; }
     .viewer-card, .panel-card { border: 1px solid rgba(255,255,255,.1); border-radius: 24px; overflow: hidden; background: linear-gradient(135deg,#171717,#050505); box-shadow: 0 20px 60px rgba(0,0,0,.45); }
     .topbar { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; gap: 16px; border-bottom: 1px solid rgba(255,255,255,.1); }
     .viewer { height: calc(100vh - 120px); min-height: 520px; position: relative; }
@@ -21,8 +21,9 @@
     .field { margin-top: 18px; }
     label { display: block; font-size: 14px; color: rgba(255,255,255,.7); margin-bottom: 8px; }
     input[type="color"] { width: 64px; height: 46px; border: 1px solid rgba(255,255,255,.15); border-radius: 12px; background: transparent; cursor: pointer; }
-    input[type="file"], input[type="range"] { width: 100%; }
+    input[type="file"], input[type="range"], select { width: 100%; }
     input[type="file"] { color: rgba(255,255,255,.72); }
+    select { min-height: 46px; border: 1px solid rgba(255,255,255,.12); border-radius: 14px; background: #101010; color: white; padding: 0 12px; outline: none; }
     button { min-height: 46px; border: 0; border-radius: 14px; cursor: pointer; font-weight: 700; }
     .secondary-button { padding: 0 16px; background: rgba(255,255,255,.1); color: white; }
     .secondary-button:hover { background: rgba(255,255,255,.16); }
@@ -31,11 +32,11 @@
     .status { position: absolute; left: 18px; right: 18px; bottom: 18px; padding: 10px 12px; border-radius: 12px; background: rgba(0,0,0,.55); color: rgba(255,255,255,.75); font-size: 13px; line-height: 1.45; }
     .slider-head { display: flex; justify-content: space-between; font-size: 14px; color: rgba(255,255,255,.7); margin-bottom: 6px; }
     .small-note { margin-top: 10px; color: rgba(255,255,255,.42); font-size: 12px; line-height: 1.5; }
-    .logo-slot { margin-top: 18px; padding: 14px; border: 1px solid rgba(255,255,255,.1); border-radius: 18px; background: rgba(255,255,255,.045); }
-    .logo-slot-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
-    .logo-slot-title strong { font-size: 14px; }
+    .logo-slot, .zone-slot { margin-top: 14px; padding: 14px; border: 1px solid rgba(255,255,255,.1); border-radius: 18px; background: rgba(255,255,255,.045); }
+    .logo-slot-title, .zone-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+    .logo-slot-title strong, .zone-title strong { font-size: 14px; }
     .mini-button { min-height: 34px; padding: 0 10px; border-radius: 10px; background: rgba(255,255,255,.1); color: white; font-size: 12px; }
-    .color-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .two-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     @media (max-width: 900px) { .page { grid-template-columns: 1fr; } .viewer { height: 58vh; } .topbar { align-items: flex-start; flex-direction: column; } }
   </style>
 </head>
@@ -45,62 +46,42 @@
       <div class="topbar">
         <div>
           <p class="eyebrow">FC26 Outfit Generator</p>
-          <h1>Jacket Creator</h1>
+          <h1 id="outfitTitle">Loading outfit...</h1>
         </div>
         <button id="rotateButton" class="secondary-button">Start Rotate</button>
       </div>
       <div id="viewer" class="viewer">
-        <div id="status" class="status">Loading model and mask...</div>
+        <div id="status" class="status">Loading...</div>
       </div>
     </section>
 
     <aside class="sidebar">
       <section class="panel-card">
-        <h2>Jacket Colors</h2>
-        <p class="muted">Recolor the RGB mask zones. Then upload fixed logos.</p>
-
-        <div class="color-grid">
-          <div class="field"><label>Main body: RED</label><input id="bodyColor" type="color" value="#d8001d" /></div>
-          <div class="field"><label>Upper panels: BLUE</label><input id="upperColor" type="color" value="#0b2cff" /></div>
-          <div class="field"><label>Bottom trim: YELLOW</label><input id="trimColor" type="color" value="#d6d600" /></div>
-          <div class="field"><label>Small strips: CYAN</label><input id="detailColor" type="color" value="#21d8d8" /></div>
-          <div class="field"><label>Accessories: MAGENTA</label><input id="hardwareColor" type="color" value="#d100ff" /></div>
-        </div>
-
-        <h3>Fixed Logo Slots</h3>
-
-        <div class="logo-slot">
-          <div class="logo-slot-title"><strong>Team Logo / Crest</strong><button id="clearTeamLogo" class="mini-button" type="button">Clear</button></div>
-          <input id="teamLogoInput" type="file" accept="image/png,image/jpeg,image/webp" />
-          <div class="field">
-            <div class="slider-head"><span>Team size</span><span id="teamLogoScaleValue">1.00</span></div>
-            <input id="teamLogoScale" type="range" min="0.40" max="2.50" step="0.05" value="1.00" />
-          </div>
-        </div>
-
-        <div class="logo-slot">
-          <div class="logo-slot-title"><strong>Brand Logo</strong><button id="clearBrandLogo" class="mini-button" type="button">Clear</button></div>
-          <input id="brandLogoInput" type="file" accept="image/png,image/jpeg,image/webp" />
-          <div class="field">
-            <div class="slider-head"><span>Brand size</span><span id="brandLogoScaleValue">1.00</span></div>
-            <input id="brandLogoScale" type="range" min="0.40" max="2.50" step="0.05" value="1.00" />
-          </div>
-        </div>
-
-        <div class="logo-slot">
-          <div class="logo-slot-title"><strong>Sponsor Logo</strong><button id="clearSponsorLogo" class="mini-button" type="button">Clear</button></div>
-          <input id="sponsorLogoInput" type="file" accept="image/png,image/jpeg,image/webp" />
-          <div class="field">
-            <div class="slider-head"><span>Sponsor size</span><span id="sponsorLogoScaleValue">1.00</span></div>
-            <input id="sponsorLogoScale" type="range" min="0.40" max="2.50" step="0.05" value="1.00" />
-          </div>
-        </div>
+        <h2>Outfit Template</h2>
+        <p class="muted">Choose a clothing template. Each template loads its own FBX, RGB mask, normal map, color zones, logo sizes, and placements.</p>
 
         <div class="field">
-          <label>Normal map, optional</label>
-          <input id="normalMapInput" type="file" accept="image/png,image/jpeg,image/webp" />
+          <label for="outfitSelect">Template</label>
+          <select id="outfitSelect"></select>
         </div>
 
+        <p id="templateInfo" class="small-note">Waiting for manifest...</p>
+      </section>
+
+      <section class="panel-card">
+        <h2>Colors</h2>
+        <p class="muted">These are created automatically from the selected outfit's config.json.</p>
+        <div id="colorControls"></div>
+      </section>
+
+      <section class="panel-card">
+        <h2>Fixed Logo Slots</h2>
+        <p class="muted">Logo slots are created from config.json. Users only upload logos; placements are automatic.</p>
+        <div id="logoControls"></div>
+      </section>
+
+      <section class="panel-card">
+        <h2>Material</h2>
         <div class="field">
           <div class="slider-head"><span>Roughness</span><span id="roughnessValue">0.72</span></div>
           <input id="roughness" type="range" min="0" max="1" step="0.01" value="0.72" />
@@ -110,14 +91,15 @@
           <div class="slider-head"><span>Metalness</span><span id="metalnessValue">0.02</span></div>
           <input id="metalness" type="range" min="0" max="0.35" step="0.01" value="0.02" />
         </div>
-
-        <p class="small-note">Model path: <strong>./models/jacket.fbx</strong><br>Mask path: <strong>./templates/jacket_idmask.png</strong><br>Logo positions are fixed in the code. We tune them once after testing.</p>
       </section>
 
       <section class="panel-card">
         <h2>Export</h2>
-        <p class="muted" style="margin-bottom:16px;">Downloads the recolored texture PNG with all uploaded logos baked onto it.</p>
-        <button id="downloadButton" class="main-button">Download Texture PNG</button>
+        <p class="muted" style="margin-bottom:16px;">Downloads the generated texture PNG at the size defined in config.json.</p>
+        <div class="two-buttons">
+          <button id="downloadButton" class="main-button">Download PNG</button>
+          <button id="resetButton" class="secondary-button">Reset</button>
+        </div>
       </section>
     </aside>
   </main>
@@ -127,134 +109,69 @@
     import { OrbitControls } from "https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js";
     import { FBXLoader } from "https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js";
 
-    const MODEL_PATH = "./models/jacket.fbx";
-    const MASK_PATH = "./templates/jacket_idmask.png";
+    const MANIFEST_PATH = "./outfits/manifest.json";
 
-    // IMPORTANT:
-    // These are first-test UV coordinates.
-    // After you test once, send me a screenshot and I will adjust x/y/width.
-    // x/y are the center point of the logo on the texture from 0 to 1.
-    const LOGO_SLOTS = {
-      team: { label: "Team Logo / Crest", x: 0.72, y: 0.58, width: 0.09 },
-      brand: { label: "Brand Logo", x: 0.58, y: 0.58, width: 0.075 },
-      sponsor: { label: "Sponsor Logo", x: 0.64, y: 0.665, width: 0.20 }
+    // Fallback keeps the page working even before you create outfits/manifest.json.
+    const FALLBACK_MANIFEST = {
+      outfits: [
+        { id: "legacy-jacket", name: "Legacy Test Jacket", config: "./config/legacy-jacket.json" }
+      ]
+    };
+
+    const FALLBACK_CONFIGS = {
+      "./config/legacy-jacket.json": {
+        id: "legacy-jacket",
+        name: "Legacy Test Jacket",
+        type: "jacket",
+        model: "./models/jacket.fbx",
+        idMask: "./templates/jacket_idmask.png",
+        normalMap: null,
+        output: { width: 2048, height: 2048, flipY: true },
+        material: { roughness: 0.72, metalness: 0.02 },
+        colorZones: {
+          body: { label: "Main Body", maskColor: "#FF0000", defaultColor: "#d8001d" },
+          upper: { label: "Upper Panels", maskColor: "#0000FF", defaultColor: "#0b2cff" },
+          trim: { label: "Bottom Trim", maskColor: "#FFFF00", defaultColor: "#d6d600" },
+          details: { label: "Small Strips", maskColor: "#00FFFF", defaultColor: "#21d8d8" },
+          hardware: { label: "Accessories / Zipper", maskColor: "#FF00FF", defaultColor: "#d100ff" }
+        },
+        logoSlots: {
+          team: { label: "Team Logo / Crest", x: 1475, y: 1188, width: 185, height: 185 },
+          brand: { label: "Brand Logo", x: 1188, y: 1188, width: 154, height: 154 },
+          sponsor: { label: "Sponsor Logo", x: 1310, y: 1362, width: 410, height: 140 }
+        }
+      }
     };
 
     const state = {
+      manifest: null,
+      config: null,
+      currentConfigUrl: null,
       autoRotate: false,
       roughness: 0.72,
       metalness: 0.02,
-      bodyColor: "#d8001d",
-      upperColor: "#0b2cff",
-      trimColor: "#d6d600",
-      detailColor: "#21d8d8",
-      hardwareColor: "#d100ff",
       model: null,
       generatedTexture: null,
       normalMap: null,
       maskImage: null,
-      logos: {
-        team: { image: null, scale: 1 },
-        brand: { image: null, scale: 1 },
-        sponsor: { image: null, scale: 1 }
-      }
+      colorValues: {},
+      logos: {}
     };
-
-    function hexToRgb(hex) {
-      const clean = hex.replace("#", "");
-      return { r: parseInt(clean.slice(0,2), 16), g: parseInt(clean.slice(2,4), 16), b: parseInt(clean.slice(4,6), 16) };
-    }
-
-    function isNearColor(r, g, b, target, tolerance = 30) {
-      return Math.abs(r - target.r) <= tolerance && Math.abs(g - target.g) <= tolerance && Math.abs(b - target.b) <= tolerance;
-    }
-
-    function validateLogoSlots(slots) {
-      return slots && Object.values(slots).every((slot) =>
-        slot && Number.isFinite(slot.x) && Number.isFinite(slot.y) && Number.isFinite(slot.width) && slot.width > 0
-      );
-    }
-
-    function testHelpers() {
-      console.assert(MODEL_PATH.endsWith(".fbx"), "Model path must point to an FBX file.");
-      console.assert(MASK_PATH.endsWith(".png"), "Mask path must point to a PNG file.");
-      console.assert(hexToRgb("#ff0000").r === 255, "hexToRgb should parse red correctly.");
-      console.assert(isNearColor(250, 5, 4, { r: 255, g: 0, b: 0 }, 10), "isNearColor should accept close red values.");
-      console.assert(validateLogoSlots(LOGO_SLOTS), "Logo slots need valid x/y/width values.");
-      console.assert(Boolean(LOGO_SLOTS.team && LOGO_SLOTS.brand && LOGO_SLOTS.sponsor), "Team, brand, and sponsor slots must exist.");
-    }
 
     const viewer = document.getElementById("viewer");
     const status = document.getElementById("status");
+    const outfitTitle = document.getElementById("outfitTitle");
+    const outfitSelect = document.getElementById("outfitSelect");
+    const templateInfo = document.getElementById("templateInfo");
+    const colorControls = document.getElementById("colorControls");
+    const logoControls = document.getElementById("logoControls");
     const rotateButton = document.getElementById("rotateButton");
     const downloadButton = document.getElementById("downloadButton");
-    const bodyColorInput = document.getElementById("bodyColor");
-    const upperColorInput = document.getElementById("upperColor");
-    const trimColorInput = document.getElementById("trimColor");
-    const detailColorInput = document.getElementById("detailColor");
-    const hardwareColorInput = document.getElementById("hardwareColor");
-    const normalMapInput = document.getElementById("normalMapInput");
+    const resetButton = document.getElementById("resetButton");
     const roughnessInput = document.getElementById("roughness");
     const metalnessInput = document.getElementById("metalness");
     const roughnessValue = document.getElementById("roughnessValue");
     const metalnessValue = document.getElementById("metalnessValue");
-
-    const logoInputs = {
-      team: document.getElementById("teamLogoInput"),
-      brand: document.getElementById("brandLogoInput"),
-      sponsor: document.getElementById("sponsorLogoInput")
-    };
-
-    const logoScaleInputs = {
-      team: document.getElementById("teamLogoScale"),
-      brand: document.getElementById("brandLogoScale"),
-      sponsor: document.getElementById("sponsorLogoScale")
-    };
-
-    const logoScaleValues = {
-      team: document.getElementById("teamLogoScaleValue"),
-      brand: document.getElementById("brandLogoScaleValue"),
-      sponsor: document.getElementById("sponsorLogoScaleValue")
-    };
-
-    const clearLogoButtons = {
-      team: document.getElementById("clearTeamLogo"),
-      brand: document.getElementById("clearBrandLogo"),
-      sponsor: document.getElementById("clearSponsorLogo")
-    };
-
-    function setStatus(text) { status.innerHTML = text; }
-
-    function loadImage(src) {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = () => reject(new Error(`Image failed to load: ${src}`));
-        img.src = src;
-      });
-    }
-
-    function loadLogoFile(file) {
-      return new Promise((resolve, reject) => {
-        if (!file) {
-          reject(new Error("No logo file selected."));
-          return;
-        }
-        const url = URL.createObjectURL(file);
-        const img = new Image();
-        img.onload = () => {
-          URL.revokeObjectURL(url);
-          resolve(img);
-        };
-        img.onerror = () => {
-          URL.revokeObjectURL(url);
-          reject(new Error("Logo image failed to load."));
-        };
-        img.src = url;
-      });
-    }
-
-    testHelpers();
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color("#050505");
@@ -292,6 +209,96 @@
     floor.receiveShadow = true;
     scene.add(floor);
 
+    function setStatus(text) { status.innerHTML = text; }
+
+    function tests() {
+      console.assert(MANIFEST_PATH.endsWith("manifest.json"), "Manifest path should point to manifest.json.");
+      console.assert(hexToRgb("#ff0000").r === 255, "hexToRgb should parse red.");
+      console.assert(isNearColor(250, 5, 4, { r: 255, g: 0, b: 0 }, 10), "isNearColor should accept near red.");
+      console.assert(validateConfig(FALLBACK_CONFIGS["./config/legacy-jacket.json"]), "Fallback config must be valid.");
+    }
+
+    function hexToRgb(hex) {
+      const clean = String(hex || "#000000").replace("#", "");
+      return {
+        r: parseInt(clean.slice(0, 2), 16),
+        g: parseInt(clean.slice(2, 4), 16),
+        b: parseInt(clean.slice(4, 6), 16)
+      };
+    }
+
+    function isValidHex(hex) {
+      return typeof hex === "string" && /^#[0-9A-Fa-f]{6}$/.test(hex);
+    }
+
+    function isNearColor(r, g, b, target, tolerance = 30) {
+      return Math.abs(r - target.r) <= tolerance && Math.abs(g - target.g) <= tolerance && Math.abs(b - target.b) <= tolerance;
+    }
+
+    function validateConfig(config) {
+      return Boolean(
+        config &&
+        config.id &&
+        config.name &&
+        config.model &&
+        config.idMask &&
+        config.output &&
+        Number.isFinite(config.output.width) &&
+        Number.isFinite(config.output.height) &&
+        config.colorZones &&
+        config.logoSlots
+      );
+    }
+
+    function resolveAssetPath(path, configUrl) {
+      if (!path) return null;
+      if (/^(https?:)?\/\//.test(path) || path.startsWith("./") || path.startsWith("/")) return path;
+      const baseUrl = new URL(configUrl, window.location.href);
+      return new URL(path, baseUrl).href;
+    }
+
+    function loadJson(url) {
+      return fetch(url).then((response) => {
+        if (!response.ok) throw new Error(`Could not load JSON: ${url}`);
+        return response.json();
+      });
+    }
+
+    function loadImage(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error(`Image failed to load: ${src}`));
+        img.src = src;
+      });
+    }
+
+    function loadLogoFile(file) {
+      return new Promise((resolve, reject) => {
+        if (!file) return reject(new Error("No logo file selected."));
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Logo image failed to load.")); };
+        img.src = url;
+      });
+    }
+
+    function removeCurrentModel() {
+      if (state.model) {
+        scene.remove(state.model);
+        state.model = null;
+      }
+      if (state.generatedTexture) {
+        state.generatedTexture.dispose();
+        state.generatedTexture = null;
+      }
+      if (state.normalMap) {
+        state.normalMap.dispose();
+        state.normalMap = null;
+      }
+    }
+
     function frameModel(object) {
       const box = new THREE.Box3().setFromObject(object);
       const size = box.getSize(new THREE.Vector3());
@@ -304,16 +311,100 @@
       object.position.z = -center.z * scale;
     }
 
-    function drawLogoSlot(ctx, canvas, slotId) {
-      const slot = LOGO_SLOTS[slotId];
+    function createColorControls() {
+      colorControls.innerHTML = "";
+      state.colorValues = {};
+
+      Object.entries(state.config.colorZones).forEach(([zoneId, zone]) => {
+        const defaultColor = isValidHex(zone.defaultColor) ? zone.defaultColor : "#111111";
+        state.colorValues[zoneId] = defaultColor;
+
+        const wrapper = document.createElement("div");
+        wrapper.className = "zone-slot";
+        wrapper.innerHTML = `
+          <div class="zone-title">
+            <strong>${zone.label || zoneId}</strong>
+            <span class="small-note" style="margin:0;">${zone.maskColor}</span>
+          </div>
+          <input type="color" value="${defaultColor}" />
+        `;
+
+        const input = wrapper.querySelector("input");
+        input.addEventListener("input", (event) => {
+          state.colorValues[zoneId] = event.target.value;
+          updateGeneratedTexture();
+        });
+
+        colorControls.appendChild(wrapper);
+      });
+    }
+
+    function createLogoControls() {
+      logoControls.innerHTML = "";
+      state.logos = {};
+
+      Object.entries(state.config.logoSlots).forEach(([slotId, slot]) => {
+        state.logos[slotId] = { image: null, scale: 1 };
+
+        const wrapper = document.createElement("div");
+        wrapper.className = "logo-slot";
+        wrapper.innerHTML = `
+          <div class="logo-slot-title">
+            <strong>${slot.label || slotId}</strong>
+            <button class="mini-button" type="button">Clear</button>
+          </div>
+          <input type="file" accept="image/png,image/jpeg,image/webp" />
+          <div class="field">
+            <div class="slider-head"><span>Size</span><span>1.00</span></div>
+            <input type="range" min="0.40" max="2.50" step="0.05" value="1.00" />
+          </div>
+          <p class="small-note">x:${slot.x}, y:${slot.y}, ${slot.width}×${slot.height || "auto"}px</p>
+        `;
+
+        const clearButton = wrapper.querySelector("button");
+        const fileInput = wrapper.querySelector("input[type='file']");
+        const rangeInput = wrapper.querySelector("input[type='range']");
+        const rangeValue = wrapper.querySelector(".slider-head span:last-child");
+
+        fileInput.addEventListener("change", async (event) => {
+          try {
+            state.logos[slotId].image = await loadLogoFile(event.target.files?.[0]);
+            updateGeneratedTexture();
+            setStatus(`${slot.label || slotId} loaded.`);
+          } catch (error) {
+            console.error(error);
+            setStatus(`${slot.label || slotId} failed to load.`);
+          }
+        });
+
+        rangeInput.addEventListener("input", (event) => {
+          state.logos[slotId].scale = Number(event.target.value);
+          rangeValue.textContent = state.logos[slotId].scale.toFixed(2);
+          updateGeneratedTexture();
+        });
+
+        clearButton.addEventListener("click", () => {
+          state.logos[slotId].image = null;
+          fileInput.value = "";
+          updateGeneratedTexture();
+          setStatus(`${slot.label || slotId} cleared.`);
+        });
+
+        logoControls.appendChild(wrapper);
+      });
+    }
+
+    function drawLogoSlot(ctx, slotId) {
+      const slot = state.config.logoSlots[slotId];
       const logo = state.logos[slotId];
       if (!slot || !logo || !logo.image) return;
 
-      const drawWidth = canvas.width * slot.width * logo.scale;
+      const scale = Number(logo.scale || 1);
+      const drawWidth = Number(slot.width) * scale;
       const aspect = logo.image.naturalHeight / logo.image.naturalWidth || 1;
-      const drawHeight = drawWidth * aspect;
-      const drawX = canvas.width * slot.x - drawWidth / 2;
-      const drawY = canvas.height * slot.y - drawHeight / 2;
+      const drawHeight = Number(slot.height || slot.width * aspect) * scale;
+      const drawX = Number(slot.x);
+      const drawY = Number(slot.y);
 
       ctx.save();
       ctx.imageSmoothingEnabled = true;
@@ -322,41 +413,38 @@
       ctx.restore();
     }
 
-    function drawAllLogos(ctx, canvas) {
-      drawLogoSlot(ctx, canvas, "team");
-      drawLogoSlot(ctx, canvas, "brand");
-      drawLogoSlot(ctx, canvas, "sponsor");
-    }
-
     function buildTextureFromMask() {
-      if (!state.maskImage) return null;
+      if (!state.maskImage || !state.config) return null;
+
+      const outWidth = state.config.output.width || state.maskImage.width;
+      const outHeight = state.config.output.height || state.maskImage.height;
       const canvas = document.createElement("canvas");
-      canvas.width = state.maskImage.width;
-      canvas.height = state.maskImage.height;
+      canvas.width = outWidth;
+      canvas.height = outHeight;
+
       const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      ctx.drawImage(state.maskImage, 0, 0);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(state.maskImage, 0, 0, outWidth, outHeight);
+
+      const imageData = ctx.getImageData(0, 0, outWidth, outHeight);
       const data = imageData.data;
 
-      const colors = {
-        red: hexToRgb(state.bodyColor),
-        blue: hexToRgb(state.upperColor),
-        yellow: hexToRgb(state.trimColor),
-        cyan: hexToRgb(state.detailColor),
-        magenta: hexToRgb(state.hardwareColor)
-      };
+      const zones = Object.entries(state.config.colorZones).map(([zoneId, zone]) => ({
+        zoneId,
+        target: hexToRgb(zone.maskColor),
+        replacement: hexToRgb(state.colorValues[zoneId] || zone.defaultColor || "#111111")
+      }));
 
       for (let i = 0; i < data.length; i += 4) {
         const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
         if (a === 0) continue;
 
-        let replacement = null;
-        if (isNearColor(r, g, b, { r:255, g:0, b:0 })) replacement = colors.red;
-        else if (isNearColor(r, g, b, { r:0, g:0, b:255 })) replacement = colors.blue;
-        else if (isNearColor(r, g, b, { r:255, g:255, b:0 })) replacement = colors.yellow;
-        else if (isNearColor(r, g, b, { r:0, g:255, b:255 })) replacement = colors.cyan;
-        else if (isNearColor(r, g, b, { r:255, g:0, b:255 })) replacement = colors.magenta;
-        else replacement = { r: 0, g: 0, b: 0 };
+        let replacement = { r: 0, g: 0, b: 0 };
+        for (const zone of zones) {
+          if (isNearColor(r, g, b, zone.target, 30)) {
+            replacement = zone.replacement;
+            break;
+          }
+        }
 
         data[i] = replacement.r;
         data[i + 1] = replacement.g;
@@ -364,16 +452,18 @@
       }
 
       ctx.putImageData(imageData, 0, 0);
-      drawAllLogos(ctx, canvas);
+      Object.keys(state.config.logoSlots).forEach((slotId) => drawLogoSlot(ctx, slotId));
       return canvas;
     }
 
     function updateGeneratedTexture() {
       const canvas = buildTextureFromMask();
       if (!canvas) return;
+
       if (state.generatedTexture) state.generatedTexture.dispose();
+
       const texture = new THREE.CanvasTexture(canvas);
-      texture.flipY = true;
+      texture.flipY = Boolean(state.config.output.flipY);
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.needsUpdate = true;
       state.generatedTexture = texture;
@@ -382,9 +472,11 @@
 
     function applyMaterialToModel() {
       if (!state.model) return;
+
       state.model.traverse((child) => {
         if (!child.isMesh || !child.material) return;
         const materials = Array.isArray(child.material) ? child.material : [child.material];
+
         materials.forEach((material) => {
           if ("map" in material && state.generatedTexture) {
             material.map = state.generatedTexture;
@@ -401,99 +493,136 @@
       });
     }
 
-    async function loadMask() {
-      state.maskImage = await loadImage(MASK_PATH);
-      updateGeneratedTexture();
-    }
-
-    async function loadModel() {
+    function loadModel(path) {
       return new Promise((resolve, reject) => {
         const loader = new FBXLoader();
-        loader.load(MODEL_PATH, (object) => {
+        loader.load(path, (object) => {
           object.traverse((child) => {
             if (!child.isMesh) return;
             child.castShadow = true;
             child.receiveShadow = true;
-            if (child.material) child.material = Array.isArray(child.material) ? child.material.map((mat) => mat.clone()) : child.material.clone();
+            if (child.material) {
+              child.material = Array.isArray(child.material)
+                ? child.material.map((mat) => mat.clone())
+                : child.material.clone();
+            }
           });
           frameModel(object);
-          state.model = object;
-          scene.add(object);
-          applyMaterialToModel();
           resolve(object);
         }, undefined, reject);
       });
     }
 
-    function loadNormalMapFile(file) {
-      if (!file) return;
-      const url = URL.createObjectURL(file);
-      const loader = new THREE.TextureLoader();
-      loader.load(url, (texture) => {
-        if (state.normalMap) state.normalMap.dispose();
-        texture.flipY = true;
+    async function loadNormalMapIfAvailable(path) {
+      if (!path) return;
+      try {
+        const texture = await new THREE.TextureLoader().loadAsync(path);
+        texture.flipY = Boolean(state.config.output.flipY);
         texture.colorSpace = THREE.NoColorSpace;
         texture.needsUpdate = true;
         state.normalMap = texture;
-        applyMaterialToModel();
-        setStatus(`Normal map loaded: ${file.name}`);
-        URL.revokeObjectURL(url);
-      }, undefined, () => {
-        setStatus("Normal map failed to load.");
-        URL.revokeObjectURL(url);
-      });
-    }
-
-    async function handleLogoUpload(slotId, file) {
-      try {
-        state.logos[slotId].image = await loadLogoFile(file);
-        updateGeneratedTexture();
-        setStatus(`${LOGO_SLOTS[slotId].label} loaded.`);
       } catch (error) {
-        console.error(error);
-        setStatus(`${LOGO_SLOTS[slotId].label} failed to load.`);
+        console.warn("Normal map failed to load:", error);
       }
     }
 
-    function clearLogo(slotId) {
-      state.logos[slotId].image = null;
-      logoInputs[slotId].value = "";
+    async function loadManifest() {
+      try {
+        state.manifest = await loadJson(MANIFEST_PATH);
+        setStatus("Loaded outfits manifest.");
+      } catch (error) {
+        console.warn("Manifest not found. Using fallback legacy config.", error);
+        state.manifest = FALLBACK_MANIFEST;
+        setStatus("Manifest not found. Using fallback legacy test jacket.");
+      }
+
+      outfitSelect.innerHTML = "";
+      state.manifest.outfits.forEach((item) => {
+        const option = document.createElement("option");
+        option.value = item.config;
+        option.textContent = item.name || item.id;
+        outfitSelect.appendChild(option);
+      });
+    }
+
+    async function loadConfig(configUrl) {
+      if (FALLBACK_CONFIGS[configUrl]) return FALLBACK_CONFIGS[configUrl];
+      return loadJson(configUrl);
+    }
+
+    async function loadOutfit(configUrl) {
+      setStatus("Loading outfit...");
+      state.currentConfigUrl = configUrl;
+      removeCurrentModel();
+
+      const config = await loadConfig(configUrl);
+      if (!validateConfig(config)) throw new Error(`Invalid outfit config: ${configUrl}`);
+      state.config = config;
+
+      const modelPath = resolveAssetPath(config.model, configUrl);
+      const maskPath = resolveAssetPath(config.idMask, configUrl);
+      const normalPath = resolveAssetPath(config.normalMap, configUrl);
+
+      state.roughness = Number(config.material?.roughness ?? 0.72);
+      state.metalness = Number(config.material?.metalness ?? 0.02);
+      roughnessInput.value = state.roughness;
+      metalnessInput.value = state.metalness;
+      roughnessValue.textContent = state.roughness.toFixed(2);
+      metalnessValue.textContent = state.metalness.toFixed(2);
+
+      outfitTitle.textContent = config.name;
+      templateInfo.innerHTML = `Type: <strong>${config.type || "outfit"}</strong><br>Output: <strong>${config.output.width}×${config.output.height}</strong><br>Model: <strong>${config.model}</strong><br>Mask: <strong>${config.idMask}</strong>`;
+
+      createColorControls();
+      createLogoControls();
+
+      state.maskImage = await loadImage(maskPath);
+      await loadNormalMapIfAvailable(normalPath);
+      state.model = await loadModel(modelPath);
+      scene.add(state.model);
+
       updateGeneratedTexture();
-      setStatus(`${LOGO_SLOTS[slotId].label} cleared.`);
+      setStatus(`Loaded: ${config.name}<br>${modelPath}<br>${maskPath}`);
     }
 
     function downloadTexture() {
       const canvas = buildTextureFromMask();
-      if (!canvas) return;
+      if (!canvas || !state.config) return;
       const link = document.createElement("a");
-      link.download = "jacket_generated_texture.png";
+      link.download = `${state.config.id || "outfit"}_generated_texture.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
     }
 
-    bodyColorInput.addEventListener("input", e => { state.bodyColor = e.target.value; updateGeneratedTexture(); });
-    upperColorInput.addEventListener("input", e => { state.upperColor = e.target.value; updateGeneratedTexture(); });
-    trimColorInput.addEventListener("input", e => { state.trimColor = e.target.value; updateGeneratedTexture(); });
-    detailColorInput.addEventListener("input", e => { state.detailColor = e.target.value; updateGeneratedTexture(); });
-    hardwareColorInput.addEventListener("input", e => { state.hardwareColor = e.target.value; updateGeneratedTexture(); });
+    roughnessInput.addEventListener("input", (event) => {
+      state.roughness = Number(event.target.value);
+      roughnessValue.textContent = state.roughness.toFixed(2);
+      applyMaterialToModel();
+    });
 
-    logoInputs.team.addEventListener("change", e => handleLogoUpload("team", e.target.files?.[0]));
-    logoInputs.brand.addEventListener("change", e => handleLogoUpload("brand", e.target.files?.[0]));
-    logoInputs.sponsor.addEventListener("change", e => handleLogoUpload("sponsor", e.target.files?.[0]));
+    metalnessInput.addEventListener("input", (event) => {
+      state.metalness = Number(event.target.value);
+      metalnessValue.textContent = state.metalness.toFixed(2);
+      applyMaterialToModel();
+    });
 
-    logoScaleInputs.team.addEventListener("input", e => { state.logos.team.scale = Number(e.target.value); logoScaleValues.team.textContent = state.logos.team.scale.toFixed(2); updateGeneratedTexture(); });
-    logoScaleInputs.brand.addEventListener("input", e => { state.logos.brand.scale = Number(e.target.value); logoScaleValues.brand.textContent = state.logos.brand.scale.toFixed(2); updateGeneratedTexture(); });
-    logoScaleInputs.sponsor.addEventListener("input", e => { state.logos.sponsor.scale = Number(e.target.value); logoScaleValues.sponsor.textContent = state.logos.sponsor.scale.toFixed(2); updateGeneratedTexture(); });
+    rotateButton.addEventListener("click", () => {
+      state.autoRotate = !state.autoRotate;
+      rotateButton.textContent = state.autoRotate ? "Stop Rotate" : "Start Rotate";
+    });
 
-    clearLogoButtons.team.addEventListener("click", () => clearLogo("team"));
-    clearLogoButtons.brand.addEventListener("click", () => clearLogo("brand"));
-    clearLogoButtons.sponsor.addEventListener("click", () => clearLogo("sponsor"));
-
-    roughnessInput.addEventListener("input", e => { state.roughness = Number(e.target.value); roughnessValue.textContent = state.roughness.toFixed(2); applyMaterialToModel(); });
-    metalnessInput.addEventListener("input", e => { state.metalness = Number(e.target.value); metalnessValue.textContent = state.metalness.toFixed(2); applyMaterialToModel(); });
-    normalMapInput.addEventListener("change", e => loadNormalMapFile(e.target.files?.[0]));
-    rotateButton.addEventListener("click", () => { state.autoRotate = !state.autoRotate; rotateButton.textContent = state.autoRotate ? "Stop Rotate" : "Start Rotate"; });
     downloadButton.addEventListener("click", downloadTexture);
+
+    resetButton.addEventListener("click", () => {
+      if (state.currentConfigUrl) loadOutfit(state.currentConfigUrl).catch((error) => setStatus(error.message));
+    });
+
+    outfitSelect.addEventListener("change", (event) => {
+      loadOutfit(event.target.value).catch((error) => {
+        console.error(error);
+        setStatus(`Could not load outfit.<br>${error.message}`);
+      });
+    });
 
     window.addEventListener("resize", () => {
       camera.aspect = viewer.clientWidth / viewer.clientHeight;
@@ -509,17 +638,17 @@
     }
 
     async function init() {
-      try {
-        await loadMask();
-        await loadModel();
-        setStatus(`Loaded model: ${MODEL_PATH}<br>Loaded mask: ${MASK_PATH}<br>Fixed logo slots are ready.`);
-      } catch (error) {
-        console.error(error);
-        setStatus(`Something failed to load.<br>Check:<br>${MODEL_PATH}<br>${MASK_PATH}`);
-      }
+      tests();
+      await loadManifest();
+      const firstConfig = outfitSelect.value;
+      await loadOutfit(firstConfig);
     }
 
-    init();
+    init().catch((error) => {
+      console.error(error);
+      setStatus(`Startup failed.<br>${error.message}`);
+    });
+
     animate();
   </script>
 </body>
