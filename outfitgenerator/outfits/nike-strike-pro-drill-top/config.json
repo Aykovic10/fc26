@@ -14,8 +14,8 @@
   },
 
   "material": {
-    "roughness": 0.72,
-    "metalness": 0.02
+    "roughness": 0.00,
+    "metalness": 0.00
   },
 
   "colorZones": {
