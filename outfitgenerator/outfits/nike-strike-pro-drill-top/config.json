@@ -14,7 +14,7 @@
   },
 
   "material": {
-    "roughness": 0.00,
+    "roughness": 0.95,
     "metalness": 0.00
   },
 
