@@ -153,6 +153,7 @@
       model: null,
       generatedTexture: null,
       normalMap: null,
+      normalMapImage: null,
       maskImage: null,
       colorValues: {},
       logos: {}
@@ -174,7 +175,7 @@
     const metalnessValue = document.getElementById("metalnessValue");
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#050505");
+    scene.background = new THREE.Color("#3f3f3f");
 
     const camera = new THREE.PerspectiveCamera(38, viewer.clientWidth / viewer.clientHeight, 0.1, 100);
     camera.position.set(0, 0.35, 4);
@@ -297,6 +298,7 @@
         state.normalMap.dispose();
         state.normalMap = null;
       }
+      state.normalMapImage = null;
     }
 
     function frameModel(object) {
@@ -470,14 +472,12 @@
       applyMaterialToModel();
     }
 
-    function createMatteFabricMaterial() {
-      return new THREE.MeshStandardMaterial({
+    function createViewerMaterial() {
+      // Viewer mode: no specular, no metallic shine, no lighting reaction.
+      // This displays the generated ID-mask texture cleanly, closer to Blender's flat/matcap preview.
+      return new THREE.MeshBasicMaterial({
         color: "#ffffff",
-        map: state.generatedTexture || null,
-        normalMap: state.normalMap || null,
-        roughness: Number(state.roughness),
-        metalness: 0,
-        envMapIntensity: 0.03
+        map: state.generatedTexture || null
       });
     }
 
@@ -487,23 +487,18 @@
       state.model.traverse((child) => {
         if (!child.isMesh) return;
 
-        // FBX files often import with shiny Phong/Lambert/custom materials.
-        // For clothing, we replace them with a clean matte fabric material.
-        if (!child.userData.fabricMaterialForced) {
-          child.material = createMatteFabricMaterial();
-          child.userData.fabricMaterialForced = true;
+        // Replace imported FBX materials with a viewer material that has zero specular lighting.
+        // The normal map is NOT applied in the viewer; it is only downloaded with the final texture.
+        if (!child.userData.viewerMaterialForced) {
+          child.material = createViewerMaterial();
+          child.userData.viewerMaterialForced = true;
         }
 
         const materials = Array.isArray(child.material) ? child.material : [child.material];
 
         materials.forEach((material) => {
           material.map = state.generatedTexture || null;
-          material.normalMap = state.normalMap || null;
-          material.normalScale = new THREE.Vector2(1, 1);
-          material.color.set("#ffffff");
-          material.roughness = Number(state.roughness);
-          material.metalness = 0;
-          material.envMapIntensity = 0.03;
+          if (material.color) material.color.set("#ffffff");
           material.needsUpdate = true;
         });
       });
@@ -532,6 +527,7 @@
     async function loadNormalMapIfAvailable(path) {
       if (!path) return;
       try {
+        state.normalMapImage = await loadImage(path);
         const texture = await new THREE.TextureLoader().loadAsync(path);
         texture.flipY = Boolean(state.config.output.flipY);
         texture.colorSpace = THREE.NoColorSpace;
@@ -539,6 +535,7 @@
         state.normalMap = texture;
       } catch (error) {
         console.warn("Normal map failed to load:", error);
+        state.normalMapImage = null;
       }
     }
 
@@ -602,14 +599,36 @@
       setStatus(`Loaded: ${config.name}<br>${modelPath}<br>${maskPath}`);
     }
 
-    function downloadTexture() {
-      const canvas = buildTextureFromMask();
-      if (!canvas || !state.config) return;
+    function downloadCanvas(canvas, filename) {
       const link = document.createElement("a");
-      link.download = `${state.config.id || "outfit"}_generated_texture.png`;
+      link.download = filename;
       link.href = canvas.toDataURL("image/png");
       link.click();
     }
+
+    function buildNormalMapDownloadCanvas() {
+      if (!state.normalMapImage || !state.config) return null;
+      const outWidth = state.config.output.width || state.normalMapImage.width;
+      const outHeight = state.config.output.height || state.normalMapImage.height;
+      const canvas = document.createElement("canvas");
+      canvas.width = outWidth;
+      canvas.height = outHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(state.normalMapImage, 0, 0, outWidth, outHeight);
+      return canvas;
+    }
+
+    function downloadTexture() {
+      const canvas = buildTextureFromMask();
+      if (!canvas || !state.config) return;
+
+      const baseName = state.config.id || "outfit";
+      downloadCanvas(canvas, `${baseName}_color.png`);
+
+      const normalCanvas = buildNormalMapDownloadCanvas();
+      if (normalCanvas) {
+        // Small delay helps browsers handle the second download cleanly.
+        setTimeout(() => downloadCanva
 
     roughnessInput.addEventListener("input", (event) => {
       state.roughness = Number(event.target.value);
