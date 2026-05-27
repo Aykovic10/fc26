@@ -710,8 +710,11 @@
       }
 
       // Center logo inside the slot box.
-      const drawX = Number(slot.x) + (boxWidth - drawWidth) / 2;
-      const drawY = Number(slot.y) + (boxHeight - drawHeight) / 2;
+      const boxX = Number(slot.x) - boxWidth / 2;
+      const boxY = Number(slot.y) - boxHeight / 2;
+
+      const drawX = boxX + (boxWidth - drawWidth) / 2;
+      const drawY = boxY + (boxHeight - drawHeight) / 2;
 
       ctx.save();
       ctx.imageSmoothingEnabled = true;
