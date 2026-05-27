@@ -666,7 +666,7 @@
           <div class="logo-extra">
             <div class="slider-head"><span>Size</span><span>1.00</span></div>
             <input type="range" min="0.40" max="2.50" step="0.05" value="1.00" />
-            <p class="small-note">x:${slot.x}, y:${slot.y}, ${slot.width}×${slot.height || "auto"}px</p>
+            <p class="small-note">Box: x:${slot.x}, y:${slot.y}, ${slot.width}×${slot.height || slot.width}px. Logo keeps aspect ratio.</p>
           </div>`;
         const optionsButton = wrapper.querySelector(".options-button");
         const clearButton = wrapper.querySelector(".clear-button");
@@ -681,7 +681,44 @@
       });
     }
 
-    function drawLogoSlot(ctx, slotId) { const slot = state.config.logoSlots[slotId]; const logo = state.logos[slotId]; if (!slot || !logo || !logo.image) return; const scale = Number(logo.scale || 1); const drawWidth = Number(slot.width) * scale; const aspect = logo.image.naturalHeight / logo.image.naturalWidth || 1; const drawHeight = Number(slot.height || slot.width * aspect) * scale; ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high"; ctx.drawImage(logo.image, Number(slot.x), Number(slot.y), drawWidth, drawHeight); ctx.restore(); }
+    function drawLogoSlot(ctx, slotId) {
+      const slot = state.config.logoSlots[slotId];
+      const logo = state.logos[slotId];
+      if (!slot || !logo || !logo.image) return;
+
+      const scale = Number(logo.scale || 1);
+
+      // Slot is a bounding box. The uploaded logo fits inside it without distortion.
+      // x/y are the TOP-LEFT of the slot box in pixels.
+      const boxWidth = Number(slot.width) * scale;
+      const boxHeight = Number(slot.height || slot.width) * scale;
+
+      const logoWidth = logo.image.naturalWidth || logo.image.width;
+      const logoHeight = logo.image.naturalHeight || logo.image.height;
+      const logoAspect = logoWidth / logoHeight;
+      const boxAspect = boxWidth / boxHeight;
+
+      let drawWidth;
+      let drawHeight;
+
+      if (logoAspect > boxAspect) {
+        drawWidth = boxWidth;
+        drawHeight = boxWidth / logoAspect;
+      } else {
+        drawHeight = boxHeight;
+        drawWidth = boxHeight * logoAspect;
+      }
+
+      // Center logo inside the slot box.
+      const drawX = Number(slot.x) + (boxWidth - drawWidth) / 2;
+      const drawY = Number(slot.y) + (boxHeight - drawHeight) / 2;
+
+      ctx.save();
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(logo.image, drawX, drawY, drawWidth, drawHeight);
+      ctx.restore();
+    }
 
     function buildTextureFromMask() {
       if (!state.maskImage || !state.config) return null;
