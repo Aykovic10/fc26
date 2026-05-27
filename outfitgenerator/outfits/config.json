@@ -1,0 +1,72 @@
+{
+  "id": "nike-strike-pro-drill-top",
+  "name": "Nike Strike Pro Drill Top",
+  "type": "Drill Top",
+
+  "model": "model.fbx",
+  "idMask": "idmask.png",
+  "normalMap": "normal.png",
+
+  "output": {
+    "width": 2048,
+    "height": 2048,
+    "flipY": true
+  },
+
+  "material": {
+    "roughness": 0.72,
+    "metalness": 0.02
+  },
+
+  "colorZones": {
+    "body": {
+      "label": "Main Body",
+      "maskColor": "#FF0000",
+      "defaultColor": "#111111"
+    },
+    "sleeves": {
+      "label": "Sleeves",
+      "maskColor": "#00ffff",
+      "defaultColor": "#110011"
+    },
+    "stripe": {
+      "label": "Stripe",
+      "maskColor": "#0000FF",
+      "defaultColor": "#d8001d"
+    },
+    "stripeAlt": {
+      "label": "Stripe Alt",
+      "maskColor": "#FFFF00",
+      "defaultColor": "#ffffff"
+    },
+    "zipper": {
+      "label": "Zipper",
+      "maskColor": "#ff00ff",
+      "defaultColor": "#282828"
+    }
+  },
+
+  "logoSlots": {
+    "team": {
+      "label": "Team Logo",
+      "x": 555,
+      "y": 1228,
+      "width": 100,
+      "height": 100
+    },
+    "brand": {
+      "label": "Brand Logo",
+      "x": 303,
+      "y": 1228,
+      "width": 100,
+      "height": 100
+    },
+    "sponsor": {
+      "label": "Sponsor Logo",
+      "x": 550,
+      "y": 1324,
+      "width": 100,
+      "height": 65
+    }
+  }
+}
