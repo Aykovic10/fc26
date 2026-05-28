@@ -844,21 +844,27 @@
       renderer.toneMappingExposure = 1;
       viewer.appendChild(renderer.domElement);
 
-      // Blender Material Preview style: no scene lights/world, use a soft studio environment.
+      // Soft studio preview lighting. Keep it even from all sides so front/back do not look different.
       const pmremGenerator = new THREE.PMREMGenerator(renderer);
       scene.environment = pmremGenerator.fromScene(new RoomEnvironment(renderer), 0.04).texture;
 
-      controls = new OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
-      controls.enablePan = false;
-      controls.minDistance = 2.2;
-      controls.maxDistance = 6;
+      scene.add(new THREE.AmbientLight("#ffffff", 1.75));
 
-      // Very soft helper lights only. No harsh key light, no metallic/specular look.
-      scene.add(new THREE.AmbientLight("#ffffff", 0.75));
-      const frontSoftLight = new THREE.DirectionalLight("#ffffff", 0.18);
-      frontSoftLight.position.set(0, 1.5, 4);
-      scene.add(frontSoftLight);
+      const frontLight = new THREE.DirectionalLight("#ffffff", 0.32);
+      frontLight.position.set(0, 2.5, 5);
+      scene.add(frontLight);
+
+      const leftLight = new THREE.DirectionalLight("#ffffff", 0.20);
+      leftLight.position.set(-4, 2.2, 3);
+      scene.add(leftLight);
+
+      const rightLight = new THREE.DirectionalLight("#ffffff", 0.20);
+      rightLight.position.set(4, 2.2, 3);
+      scene.add(rightLight);
+
+      const backLight = new THREE.DirectionalLight("#ffffff", 0.16);
+      backLight.position.set(0, 2.2, -5);
+      scene.add(backLight);
 
       renderer.domElement.addEventListener("pointerdown", (event) => {
         state.pointerDown = { x: event.clientX, y: event.clientY };
@@ -1149,10 +1155,10 @@
           map: state.generatedTexture,
           normalMap: state.normalMap || null,
           // Matches your Blender Normal Map node strength.
-          normalScale: new THREE.Vector2(0.35, 0.35),
+          normalScale: new THREE.Vector2(0.08, 0.08),
           roughness: 1,
           metalness: 0,
-          envMapIntensity: 1,
+          envMapIntensity: 0.18,
           side: THREE.DoubleSide
         });
         child.material.needsUpdate = true;
