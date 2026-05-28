@@ -1079,7 +1079,7 @@
               </label>
               <input class="logo-background-color logo-option-color" type="color" value="#1f1f1f" />
             </div>
-            <p class="small-note">Box center: x:${slot.x}, y:${slot.y}, ${slot.width}×${slot.height || slot.width}px. Logo keeps aspect ratio.</p>
+            <p class="small-note">Box center: x:${slot.x}, y:${slot.y}, ${slot.width}×${slot.height || slot.width}px. Background follows logo shape.</p>
           </div>`;
         const optionsButton = wrapper.querySelector(".options-button");
         const clearButton = wrapper.querySelector(".clear-button");
@@ -1263,15 +1263,22 @@
       ctx.imageSmoothingQuality = "high";
 
       if (logo.background) {
-        const backgroundPadding = Math.max(6, Math.min(boxWidth, boxHeight) * 0.08);
-        const bgX = boxX - backgroundPadding;
-        const bgY = boxY - backgroundPadding;
-        const bgWidth = boxWidth + backgroundPadding * 2;
-        const bgHeight = boxHeight + backgroundPadding * 2;
-        const bgRadius = Math.min(bgWidth, bgHeight) * 0.18;
-        ctx.fillStyle = toGameSafeColor(logo.backgroundColor || "#1f1f1f");
-        drawRoundedRect(ctx, bgX, bgY, bgWidth, bgHeight, bgRadius);
-        ctx.fill();
+        // Logo background is clipped to the uploaded logo's alpha/shape.
+        // This prevents a full rectangular block behind badge-style logos.
+        const bgCanvas = document.createElement("canvas");
+        bgCanvas.width = Math.max(1, Math.round(drawWidth));
+        bgCanvas.height = Math.max(1, Math.round(drawHeight));
+        const bgCtx = bgCanvas.getContext("2d");
+        bgCtx.imageSmoothingEnabled = true;
+        bgCtx.imageSmoothingQuality = "high";
+
+        bgCtx.drawImage(logo.image, 0, 0, bgCanvas.width, bgCanvas.height);
+        bgCtx.globalCompositeOperation = "source-in";
+        bgCtx.fillStyle = toGameSafeColor(logo.backgroundColor || "#1f1f1f");
+        bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+        bgCtx.globalCompositeOperation = "source-over";
+
+        ctx.drawImage(bgCanvas, drawX, drawY, drawWidth, drawHeight);
       }
 
       if (logo.recolor) {
