@@ -732,6 +732,7 @@
     import * as THREE from "https://esm.sh/three@0.160.0";
     import { OrbitControls } from "https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js";
     import { FBXLoader } from "https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js";
+    import JSZip from "https://esm.sh/jszip@3.10.1";
 
     const MANIFEST_PATH = "./outfits/manifest.json";
 
@@ -1256,20 +1257,11 @@
       link.remove();
     }
 
-    async function downloadFileFromUrl(url, filename) {
-      if (!url) return false;
-      try {
-        const response = await fetch(url, { cache: "no-store" });
-        if (!response.ok) throw new Error(`Could not download file: ${url}`);
-        const blob = await response.blob();
-        const objectUrl = URL.createObjectURL(blob);
-        triggerDownload(objectUrl, filename);
-        setTimeout(() => URL.revokeObjectURL(objectUrl), 2500);
-        return true;
-      } catch (error) {
-        console.warn("Normal map download failed:", error);
-        return false;
-      }
+    async function fetchBlob(url) {
+      if (!url) return null;
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) throw new Error(`Could not fetch file: ${url}`);
+      return response.blob();
     }
 
     async function downloadTexture() {
@@ -1277,17 +1269,33 @@
       if (!canvas || !state.config) return;
 
       const outfitId = state.config.id || "outfit";
-      triggerDownload(canvas.toDataURL("image/png"), `${outfitId}_generated_texture.png`);
+      const zip = new JSZip();
 
-      // Also download the original normal map exactly as it is. It is not edited or merged.
+      const textureBlob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+      zip.file(`${outfitId}_generated_texture.png`, textureBlob);
+
+      // Add the original normal map exactly as it is. It is not edited or merged.
       if (state.normalMapPath) {
-        const normalFilename = state.normalMapName || `${outfitId}_normal.png`;
-        const ok = await downloadFileFromUrl(state.normalMapPath, normalFilename);
-        setStatus(ok ? `Downloaded texture and normal map.` : `Downloaded texture. Normal map was not found.`);
+        try {
+          const normalBlob = await fetchBlob(state.normalMapPath);
+          const normalFilename = state.normalMapName || `${outfitId}_normal.png`;
+          zip.file(normalFilename, normalBlob);
+        } catch (error) {
+          console.warn("Normal map was not added to ZIP:", error);
+          zip.file("normal-map-missing.txt", "Normal map was set in config.json, but the file could not be downloaded. Check the normalMap path.");
+        }
       } else {
-        setStatus(`Downloaded texture. No normal map is set in config.json.`);
+        zip.file("normal-map-missing.txt", "No normalMap is set in config.json for this outfit.");
       }
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const zipUrl = URL.createObjectURL(zipBlob);
+      triggerDownload(zipUrl, `${outfitId}_textures.zip`);
+      setTimeout(() => URL.revokeObjectURL(zipUrl), 2500);
+
+      setStatus(`Downloaded ZIP with generated texture${state.normalMapPath ? " and normal map" : ""}.`);
     }
+
     rotateButton.addEventListener("click", () => { state.autoRotate = !state.autoRotate; rotateButton.textContent = state.autoRotate ? "Stop Rotate" : "Start Rotate"; });
     downloadButton.addEventListener("click", downloadTexture);
     downloadButtonMobile.addEventListener("click", downloadTexture);
