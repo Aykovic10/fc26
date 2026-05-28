@@ -774,11 +774,40 @@
     function hexToRgb(hex) { const clean = String(hex || "#000000").replace("#", ""); return { r: parseInt(clean.slice(0, 2), 16), g: parseInt(clean.slice(2, 4), 16), b: parseInt(clean.slice(4, 6), 16) }; }
     function isValidHex(hex) { return typeof hex === "string" && /^#[0-9A-Fa-f]{6}$/.test(hex); }
     function normalizeHex(value, fallback = "#111111") { return isValidHex(value) ? value : fallback; }
+    function numberToTwoDigitHex(value) {
+      return Math.max(0, Math.min(255, value)).toString(16).padStart(2, "0");
+    }
+
+    function rgbToHex(r, g, b) {
+      return `#${numberToTwoDigitHex(r)}${numberToTwoDigitHex(g)}${numberToTwoDigitHex(b)}`;
+    }
+
+    function isNeutralColor(rgb, tolerance = 3) {
+      const max = Math.max(rgb.r, rgb.g, rgb.b);
+      const min = Math.min(rgb.r, rgb.g, rgb.b);
+      return max - min <= tolerance;
+    }
+
+    function remapNeutralGray(gray) {
+      // Game-safe grayscale remap:
+      // 0   -> 31  (#1f1f1f)
+      // 32  -> 56  (#383838)
+      // 223 -> 207 (#cfcfcf)
+      // 255 -> 232 (#e8e8e8)
+      return 31 + Math.round((gray / 255) * 201);
+    }
+
     function toGameSafeColor(hex) {
       const safe = normalizeHex(hex);
       const rgb = hexToRgb(safe);
-      if (rgb.r <= 8 && rgb.g <= 8 && rgb.b <= 8) return "#1f1f1f";
-      if (rgb.r >= 248 && rgb.g >= 248 && rgb.b >= 248) return "#e8e8e8";
+
+      // Only neutral/no-hue colors get remapped. Real colors stay unchanged.
+      if (isNeutralColor(rgb)) {
+        const gray = Math.round((rgb.r + rgb.g + rgb.b) / 3);
+        const safeGray = remapNeutralGray(gray);
+        return rgbToHex(safeGray, safeGray, safeGray);
+      }
+
       return safe.toLowerCase();
     }
     function isNearColor(r, g, b, target, tolerance = 30) { return Math.abs(r - target.r) <= tolerance && Math.abs(g - target.g) <= tolerance && Math.abs(b - target.b) <= tolerance; }
