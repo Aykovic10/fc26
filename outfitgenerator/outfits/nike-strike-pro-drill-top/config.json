@@ -58,10 +58,11 @@
     },
     "sponsor": {
       "label": "Sponsor Logo",
-      "x": 555,
-      "y": 1325,
-      "width": 100,
-      "height": 65
+      "x": 418.5,
+      "y": 1449,
+      "width": 469,
+      "height": 130
     }
   }
 }
+
