@@ -699,7 +699,6 @@
     import * as THREE from "https://esm.sh/three@0.160.0";
     import { OrbitControls } from "https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js";
     import { FBXLoader } from "https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js";
-    import { RoomEnvironment } from "https://esm.sh/three@0.160.0/examples/jsm/environments/RoomEnvironment.js";
 
     const MANIFEST_PATH = "./outfits/manifest.json";
 
@@ -843,10 +842,7 @@
       renderer.toneMapping = THREE.NoToneMapping;
       renderer.toneMappingExposure = 1;
       viewer.appendChild(renderer.domElement);
-
-      // Soft studio preview lighting. Keep it even from all sides so front/back do not look different.
-      const pmremGenerator = new THREE.PMREMGenerator(renderer);
-      scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+      // Soft studio preview lighting. No RoomEnvironment, because it can break in browser/CDN builds.
 
       scene.add(new THREE.AmbientLight("#ffffff", 1.75));
 
@@ -1158,7 +1154,7 @@
           normalScale: new THREE.Vector2(0.08, 0.08),
           roughness: 1,
           metalness: 0,
-          envMapIntensity: 0.18,
+          envMapIntensity: 0,
           side: THREE.DoubleSide
         });
         child.material.needsUpdate = true;
