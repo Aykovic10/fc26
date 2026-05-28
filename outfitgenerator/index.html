@@ -846,7 +846,7 @@
 
       // Soft studio preview lighting. Keep it even from all sides so front/back do not look different.
       const pmremGenerator = new THREE.PMREMGenerator(renderer);
-      scene.environment = pmremGenerator.fromScene(new RoomEnvironment(renderer), 0.04).texture;
+      scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
 
       scene.add(new THREE.AmbientLight("#ffffff", 1.75));
 
