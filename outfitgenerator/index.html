@@ -766,6 +766,8 @@
       autoRotate: false,
       model: null,
       generatedTexture: null,
+      normalMapPath: null,
+      normalMapName: null,
       maskImage: null,
       maskSampleCanvas: null,
       maskSampleCtx: null,
@@ -1230,6 +1232,9 @@
       state.config = config;
       const modelPath = resolveAssetPath(config.model, configUrl);
       const maskPath = resolveAssetPath(config.idMask, configUrl);
+      const normalPath = resolveAssetPath(config.normalMap, configUrl);
+      state.normalMapPath = normalPath;
+      state.normalMapName = config.normalMap ? String(config.normalMap).split("/").pop() : null;
       outfitTitle.textContent = config.name;
       templateInfo.innerHTML = `Type: <strong>${config.type || "outfit"}</strong><br>Output: <strong>${config.output.width}×${config.output.height}</strong><br>Model: <strong>${config.model}</strong><br>Mask: <strong>${config.idMask}</strong>`;
       createColorControls();
@@ -1242,7 +1247,47 @@
       setStatus(`Loaded: ${config.name}<br>${modelPath}<br>${maskPath}<br>Click a colored part on the 3D outfit to edit it.`);
     }
 
-    function downloadTexture() { const canvas = buildTextureFromMask(); if (!canvas || !state.config) return; const link = document.createElement("a"); link.download = `${state.config.id || "outfit"}_generated_texture.png`; link.href = canvas.toDataURL("image/png"); link.click(); }
+    function triggerDownload(url, filename) {
+      const link = document.createElement("a");
+      link.download = filename;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+
+    async function downloadFileFromUrl(url, filename) {
+      if (!url) return false;
+      try {
+        const response = await fetch(url, { cache: "no-store" });
+        if (!response.ok) throw new Error(`Could not download file: ${url}`);
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        triggerDownload(objectUrl, filename);
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 2500);
+        return true;
+      } catch (error) {
+        console.warn("Normal map download failed:", error);
+        return false;
+      }
+    }
+
+    async function downloadTexture() {
+      const canvas = buildTextureFromMask();
+      if (!canvas || !state.config) return;
+
+      const outfitId = state.config.id || "outfit";
+      triggerDownload(canvas.toDataURL("image/png"), `${outfitId}_generated_texture.png`);
+
+      // Also download the original normal map exactly as it is. It is not edited or merged.
+      if (state.normalMapPath) {
+        const normalFilename = state.normalMapName || `${outfitId}_normal.png`;
+        const ok = await downloadFileFromUrl(state.normalMapPath, normalFilename);
+        setStatus(ok ? `Downloaded texture and normal map.` : `Downloaded texture. Normal map was not found.`);
+      } else {
+        setStatus(`Downloaded texture. No normal map is set in config.json.`);
+      }
+    }
     rotateButton.addEventListener("click", () => { state.autoRotate = !state.autoRotate; rotateButton.textContent = state.autoRotate ? "Stop Rotate" : "Start Rotate"; });
     downloadButton.addEventListener("click", downloadTexture);
     downloadButtonMobile.addEventListener("click", downloadTexture);
