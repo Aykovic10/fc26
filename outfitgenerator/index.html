@@ -647,6 +647,7 @@
         type: "jacket",
         model: "./models/jacket.fbx",
         idMask: "./templates/jacket_idmask.png",
+        normalMap: null,
         output: { width: 2048, height: 2048, flipY: true },
         colorZones: {
           body: { label: "Main Body", maskColor: "#FF0000", defaultColor: "#d8001d" },
@@ -670,6 +671,7 @@
       autoRotate: false,
       model: null,
       generatedTexture: null,
+      normalMap: null,
       maskImage: null,
       maskSampleCanvas: null,
       maskSampleCtx: null,
@@ -763,7 +765,21 @@
     function loadLogoFile(file) { return new Promise((resolve, reject) => { if (!file) return reject(new Error("No logo file selected.")); const url = URL.createObjectURL(file); const img = new Image(); img.onload = () => { URL.revokeObjectURL(url); resolve(img); }; img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Logo image failed to load.")); }; img.src = url; }); }
 
     function disposeMaterial(material) { if (!material) return; if (Array.isArray(material)) { material.forEach(disposeMaterial); return; } if (material.map) material.map.dispose?.(); material.dispose?.(); }
-    function removeCurrentModel() { if (state.model) { scene.remove(state.model); state.model.traverse((child) => { if (child.isMesh) disposeMaterial(child.material); }); state.model = null; } if (state.generatedTexture) { state.generatedTexture.dispose(); state.generatedTexture = null; } }
+    function removeCurrentModel() {
+      if (state.model) {
+        scene.remove(state.model);
+        state.model.traverse((child) => { if (child.isMesh) disposeMaterial(child.material); });
+        state.model = null;
+      }
+      if (state.generatedTexture) {
+        state.generatedTexture.dispose();
+        state.generatedTexture = null;
+      }
+      if (state.normalMap) {
+        state.normalMap.dispose();
+        state.normalMap = null;
+      }
+    }
     function frameModel(object) { const box = new THREE.Box3().setFromObject(object); const size = box.getSize(new THREE.Vector3()); const center = box.getCenter(new THREE.Vector3()); const maxSize = Math.max(size.x, size.y, size.z) || 1; const scale = 2.8 / maxSize; object.scale.setScalar(scale); object.position.x = -center.x * scale; object.position.y = -center.y * scale - 0.05; object.position.z = -center.z * scale; }
 
     function createMaskSampler() {
@@ -1005,8 +1021,25 @@
       if (!state.model || !state.generatedTexture) return;
       state.model.traverse((child) => {
         if (!child.isMesh) return;
+
         disposeMaterial(child.material);
-        child.material = new THREE.MeshLambertMaterial({ color: "#ffffff", map: state.generatedTexture, side: THREE.DoubleSide });
+
+        // Basic fabric preview:
+        // - color texture is shown normally
+        // - normal map is visible but subtle
+        // - no metalness
+        // - high roughness so it doesn't become glossy/shiny
+        child.material = new THREE.MeshStandardMaterial({
+          color: "#ffffff",
+          map: state.generatedTexture,
+          normalMap: state.normalMap || null,
+          normalScale: new THREE.Vector2(0.25, 0.25),
+          roughness: 0.94,
+          metalness: 0,
+          envMapIntensity: 0,
+          side: THREE.DoubleSide
+        });
+
         child.material.needsUpdate = true;
       });
     }
@@ -1025,16 +1058,18 @@
       state.config = config;
       const modelPath = resolveAssetPath(config.model, configUrl);
       const maskPath = resolveAssetPath(config.idMask, configUrl);
+      const normalPath = resolveAssetPath(config.normalMap, configUrl);
       outfitTitle.textContent = config.name;
-      templateInfo.innerHTML = `Type: <strong>${config.type || "outfit"}</strong><br>Output: <strong>${config.output.width}×${config.output.height}</strong><br>Model: <strong>${config.model}</strong><br>Mask: <strong>${config.idMask}</strong>`;
+      templateInfo.innerHTML = `Type: <strong>${config.type || "outfit"}</strong><br>Output: <strong>${config.output.width}×${config.output.height}</strong><br>Model: <strong>${config.model}</strong><br>Mask: <strong>${config.idMask}</strong><br>Normal: <strong>${config.normalMap || "none"}</strong>`;
       createColorControls();
       createLogoControls();
       state.maskImage = await loadImage(maskPath, true);
       createMaskSampler();
+      await loadNormalMap(normalPath);
       state.model = await loadModel(modelPath);
       scene.add(state.model);
       updateGeneratedTexture();
-      setStatus(`Loaded: ${config.name}<br>${modelPath}<br>${maskPath}<br>Click a colored part on the 3D outfit to edit it.`);
+      setStatus(`Loaded: ${config.name}<br>${modelPath}<br>${maskPath}<br>${normalPath ? "Normal map active: subtle non-color preview." : "No normal map in config."}<br>Click a colored part on the 3D outfit to edit it.`);
     }
 
     function downloadTexture() { const canvas = buildTextureFromMask(); if (!canvas || !state.config) return; const link = document.createElement("a"); link.download = `${state.config.id || "outfit"}_generated_texture.png`; link.href = canvas.toDataURL("image/png"); link.click(); }
