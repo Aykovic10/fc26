@@ -1239,6 +1239,84 @@
       ctx.closePath();
     }
 
+    function buildEnclosedLogoBackground(image, width, height, fillColor) {
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(width));
+      canvas.height = Math.max(1, Math.round(height));
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+      const w = canvas.width;
+      const h = canvas.height;
+      const pixelCount = w * h;
+      const outside = new Uint8Array(pixelCount);
+      const qx = new Int32Array(pixelCount);
+      const qy = new Int32Array(pixelCount);
+      let head = 0;
+      let tail = 0;
+      const alphaThreshold = 10;
+
+      function pixelIndex(x, y) {
+        return y * w + x;
+      }
+
+      function isTransparentPixel(x, y) {
+        return data[pixelIndex(x, y) * 4 + 3] <= alphaThreshold;
+      }
+
+      function enqueue(x, y) {
+        const idx = pixelIndex(x, y);
+        if (outside[idx] || !isTransparentPixel(x, y)) return;
+        outside[idx] = 1;
+        qx[tail] = x;
+        qy[tail] = y;
+        tail += 1;
+      }
+
+      for (let x = 0; x < w; x += 1) {
+        enqueue(x, 0);
+        enqueue(x, h - 1);
+      }
+      for (let y = 0; y < h; y += 1) {
+        enqueue(0, y);
+        enqueue(w - 1, y);
+      }
+
+      while (head < tail) {
+        const x = qx[head];
+        const y = qy[head];
+        head += 1;
+        if (x > 0) enqueue(x - 1, y);
+        if (x < w - 1) enqueue(x + 1, y);
+        if (y > 0) enqueue(x, y - 1);
+        if (y < h - 1) enqueue(x, y + 1);
+      }
+
+      const output = ctx.createImageData(w, h);
+      const out = output.data;
+      const { r, g, b } = hexToRgb(normalizeHex(fillColor || "#1f1f1f", "#1f1f1f"));
+
+      for (let i = 0; i < pixelCount; i += 1) {
+        const alpha = data[i * 4 + 3];
+        if (alpha <= alphaThreshold && !outside[i]) {
+          out[i * 4] = r;
+          out[i * 4 + 1] = g;
+          out[i * 4 + 2] = b;
+          out[i * 4 + 3] = 255;
+        } else {
+          out[i * 4 + 3] = 0;
+        }
+      }
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.putImageData(output, 0, 0);
+      return canvas;
+    }
+
     function drawLogoSlot(ctx, slotId) {
       const slot = state.config.logoSlots[slotId];
       const logo = state.logos[slotId];
@@ -1263,21 +1341,9 @@
       ctx.imageSmoothingQuality = "high";
 
       if (logo.background) {
-        // Logo background is clipped to the uploaded logo's alpha/shape.
-        // This prevents a full rectangular block behind badge-style logos.
-        const bgCanvas = document.createElement("canvas");
-        bgCanvas.width = Math.max(1, Math.round(drawWidth));
-        bgCanvas.height = Math.max(1, Math.round(drawHeight));
-        const bgCtx = bgCanvas.getContext("2d");
-        bgCtx.imageSmoothingEnabled = true;
-        bgCtx.imageSmoothingQuality = "high";
-
-        bgCtx.drawImage(logo.image, 0, 0, bgCanvas.width, bgCanvas.height);
-        bgCtx.globalCompositeOperation = "source-in";
-        bgCtx.fillStyle = toGameSafeColor(logo.backgroundColor || "#1f1f1f");
-        bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
-        bgCtx.globalCompositeOperation = "source-over";
-
+        // Fill only the enclosed transparent space inside the uploaded logo.
+        // Example: a black PSG outline on transparent background becomes a pink badge with black outlines.
+        const bgCanvas = buildEnclosedLogoBackground(logo.image, drawWidth, drawHeight, logo.backgroundColor || "#1f1f1f");
         ctx.drawImage(bgCanvas, drawX, drawY, drawWidth, drawHeight);
       }
 
