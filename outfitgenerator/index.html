@@ -699,6 +699,7 @@
     import * as THREE from "https://esm.sh/three@0.160.0";
     import { OrbitControls } from "https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js";
     import { FBXLoader } from "https://esm.sh/three@0.160.0/examples/jsm/loaders/FBXLoader.js";
+    import { RoomEnvironment } from "https://esm.sh/three@0.160.0/examples/jsm/environments/RoomEnvironment.js";
 
     const MANIFEST_PATH = "./outfits/manifest.json";
 
@@ -827,34 +828,37 @@
 
     function initViewer() {
       viewer.querySelectorAll("canvas").forEach((canvas) => canvas.remove());
+
       scene = new THREE.Scene();
       scene.background = new THREE.Color("#f4f4f4");
+
       camera = new THREE.PerspectiveCamera(38, viewer.clientWidth / viewer.clientHeight, 0.1, 100);
       camera.position.set(0, 0.35, 4);
+
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setSize(viewer.clientWidth, viewer.clientHeight);
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.shadowMap.enabled = false;
+      renderer.toneMapping = THREE.NoToneMapping;
+      renderer.toneMappingExposure = 1;
       viewer.appendChild(renderer.domElement);
+
+      // Blender Material Preview style: no scene lights/world, use a soft studio environment.
+      const pmremGenerator = new THREE.PMREMGenerator(renderer);
+      scene.environment = pmremGenerator.fromScene(new RoomEnvironment(renderer), 0.04).texture;
+
       controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
       controls.enablePan = false;
       controls.minDistance = 2.2;
       controls.maxDistance = 6;
-      // Kit Creator-style soft studio lighting: bright, even, and low contrast.
-      scene.add(new THREE.AmbientLight("#ffffff", 1.45));
 
-      const hemiLight = new THREE.HemisphereLight("#ffffff", "#d8d8d8", 1.15);
-      scene.add(hemiLight);
-
-      const frontLight = new THREE.DirectionalLight("#ffffff", 0.55);
-      frontLight.position.set(0, 2.6, 4.8);
-      scene.add(frontLight);
-
-      const softTopLight = new THREE.DirectionalLight("#ffffff", 0.22);
-      softTopLight.position.set(0, 5, 1.5);
-      scene.add(softTopLight);
+      // Very soft helper lights only. No harsh key light, no metallic/specular look.
+      scene.add(new THREE.AmbientLight("#ffffff", 0.75));
+      const frontSoftLight = new THREE.DirectionalLight("#ffffff", 0.18);
+      frontSoftLight.position.set(0, 1.5, 4);
+      scene.add(frontSoftLight);
 
       renderer.domElement.addEventListener("pointerdown", (event) => {
         state.pointerDown = { x: event.clientX, y: event.clientY };
@@ -872,7 +876,11 @@
       try {
         const texture = await new THREE.TextureLoader().loadAsync(path);
         texture.flipY = Boolean(state.config?.output?.flipY);
+        // Blender setting: Color Space = Non-Color
         texture.colorSpace = THREE.NoColorSpace;
+        texture.generateMipmaps = true;
+        texture.minFilter = THREE.LinearMipmapLinearFilter;
+        texture.magFilter = THREE.LinearFilter;
         texture.needsUpdate = true;
         return texture;
       } catch (error) {
@@ -1140,10 +1148,11 @@
           color: "#ffffff",
           map: state.generatedTexture,
           normalMap: state.normalMap || null,
-          normalScale: new THREE.Vector2(0.025, 0.025),
+          // Matches your Blender Normal Map node strength.
+          normalScale: new THREE.Vector2(0.35, 0.35),
           roughness: 1,
           metalness: 0,
-          envMapIntensity: 0,
+          envMapIntensity: 1,
           side: THREE.DoubleSide
         });
         child.material.needsUpdate = true;
