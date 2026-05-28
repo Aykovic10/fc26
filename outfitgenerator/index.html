@@ -349,6 +349,79 @@
       color: rgba(255,255,255,.65);
     }
 
+    .logo-file-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .file-upload-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 30px;
+      padding: 0 10px;
+      border-radius: 9px;
+      background: rgba(255,255,255,.10);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: .15s ease;
+    }
+
+    .file-upload-button:hover {
+      background: rgba(0,230,106,.18);
+      color: var(--green);
+    }
+
+    .file-upload-button input {
+      display: none;
+    }
+
+    .file-name {
+      min-width: 0;
+      color: rgba(255,255,255,.48);
+      font-size: 11px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .logo-option-row {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .logo-option-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(255,255,255,.72);
+      font-size: 12px;
+      cursor: pointer;
+      user-select: none;
+      margin: 0;
+    }
+
+    .logo-option-toggle input {
+      width: 15px;
+      height: 15px;
+      accent-color: var(--green);
+    }
+
+    .logo-option-color {
+      width: 42px !important;
+      height: 30px !important;
+      border-radius: 8px !important;
+      cursor: pointer;
+    }
+
     .logo-extra {
       border-top: 1px solid var(--line-soft);
       padding: 9px;
@@ -969,14 +1042,20 @@
       logoControls.innerHTML = "";
       state.logos = {};
       Object.entries(state.config.logoSlots).forEach(([slotId, slot]) => {
-        state.logos[slotId] = { image: null, scale: 1, recolor: false, color: "#ffffff" };
+        state.logos[slotId] = { image: null, scale: 1, recolor: false, color: "#ffffff", background: false, backgroundColor: "#1f1f1f" };
         const wrapper = document.createElement("div");
         wrapper.className = "logo-slot";
         wrapper.innerHTML = `
           <div class="logo-main">
             <div>
               <strong>${slot.label || slotId}</strong>
-              <input type="file" accept="image/png,image/jpeg,image/webp" />
+              <div class="logo-file-row">
+                <label class="file-upload-button">
+                  Choose logo
+                  <input class="logo-file-input" type="file" accept="image/png,image/jpeg,image/webp" />
+                </label>
+                <span class="file-name">No file</span>
+              </div>
             </div>
             <div class="logo-actions">
               <button class="mini-button options-button" type="button">Options</button>
@@ -993,21 +1072,44 @@
               </label>
               <input class="logo-recolor-color" type="color" value="#ffffff" />
             </div>
+            <div class="logo-option-row">
+              <label class="logo-option-toggle">
+                <input class="logo-background-checkbox" type="checkbox" />
+                Background
+              </label>
+              <input class="logo-background-color logo-option-color" type="color" value="#1f1f1f" />
+            </div>
             <p class="small-note">Box center: x:${slot.x}, y:${slot.y}, ${slot.width}×${slot.height || slot.width}px. Logo keeps aspect ratio.</p>
           </div>`;
         const optionsButton = wrapper.querySelector(".options-button");
         const clearButton = wrapper.querySelector(".clear-button");
-        const fileInput = wrapper.querySelector("input[type='file']");
+        const fileInput = wrapper.querySelector(".logo-file-input");
+        const fileName = wrapper.querySelector(".file-name");
         const rangeInput = wrapper.querySelector("input[type='range']");
         const rangeValue = wrapper.querySelector(".slider-head span:last-child");
         const recolorCheckbox = wrapper.querySelector(".logo-recolor-checkbox");
         const recolorColorInput = wrapper.querySelector(".logo-recolor-color");
+        const backgroundCheckbox = wrapper.querySelector(".logo-background-checkbox");
+        const backgroundColorInput = wrapper.querySelector(".logo-background-color");
         optionsButton.addEventListener("click", () => wrapper.classList.toggle("open"));
-        fileInput.addEventListener("change", async (event) => { try { state.logos[slotId].image = await loadLogoFile(event.target.files?.[0]); updateGeneratedTexture(); setStatus(`${slot.label || slotId} loaded.`); } catch (error) { console.error(error); setStatus(`${slot.label || slotId} failed to load.`); } });
+        fileInput.addEventListener("change", async (event) => {
+          try {
+            const file = event.target.files?.[0];
+            state.logos[slotId].image = await loadLogoFile(file);
+            fileName.textContent = file?.name || "Logo loaded";
+            updateGeneratedTexture();
+            setStatus(`${slot.label || slotId} loaded.`);
+          } catch (error) {
+            console.error(error);
+            setStatus(`${slot.label || slotId} failed to load.`);
+          }
+        });
         rangeInput.addEventListener("input", (event) => { state.logos[slotId].scale = Number(event.target.value); rangeValue.textContent = state.logos[slotId].scale.toFixed(2); updateGeneratedTexture(); });
         recolorCheckbox.addEventListener("change", (event) => { state.logos[slotId].recolor = event.target.checked; updateGeneratedTexture(); });
         recolorColorInput.addEventListener("input", (event) => { state.logos[slotId].color = normalizeHex(event.target.value, "#ffffff"); updateGeneratedTexture(); });
-        clearButton.addEventListener("click", () => { state.logos[slotId].image = null; fileInput.value = ""; updateGeneratedTexture(); setStatus(`${slot.label || slotId} cleared.`); });
+        backgroundCheckbox.addEventListener("change", (event) => { state.logos[slotId].background = event.target.checked; updateGeneratedTexture(); });
+        backgroundColorInput.addEventListener("input", (event) => { state.logos[slotId].backgroundColor = toGameSafeColor(event.target.value); updateGeneratedTexture(); });
+        clearButton.addEventListener("click", () => { state.logos[slotId].image = null; fileInput.value = ""; fileName.textContent = "No file"; updateGeneratedTexture(); setStatus(`${slot.label || slotId} cleared.`); });
         logoControls.appendChild(wrapper);
       });
     }
@@ -1122,6 +1224,21 @@
       }
     }
 
+    function drawRoundedRect(ctx, x, y, width, height, radius) {
+      const r = Math.max(0, Math.min(radius, width / 2, height / 2));
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + width - r, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+      ctx.lineTo(x + width, y + height - r);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+      ctx.lineTo(x + r, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
     function drawLogoSlot(ctx, slotId) {
       const slot = state.config.logoSlots[slotId];
       const logo = state.logos[slotId];
@@ -1144,6 +1261,18 @@
       ctx.save();
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
+
+      if (logo.background) {
+        const backgroundPadding = Math.max(6, Math.min(boxWidth, boxHeight) * 0.08);
+        const bgX = boxX - backgroundPadding;
+        const bgY = boxY - backgroundPadding;
+        const bgWidth = boxWidth + backgroundPadding * 2;
+        const bgHeight = boxHeight + backgroundPadding * 2;
+        const bgRadius = Math.min(bgWidth, bgHeight) * 0.18;
+        ctx.fillStyle = toGameSafeColor(logo.backgroundColor || "#1f1f1f");
+        drawRoundedRect(ctx, bgX, bgY, bgWidth, bgHeight, bgRadius);
+        ctx.fill();
+      }
 
       if (logo.recolor) {
         const tempCanvas = document.createElement("canvas");
