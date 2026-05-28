@@ -382,6 +382,38 @@
       margin-bottom: 6px;
     }
 
+    .logo-recolor-row {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .logo-recolor-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(255,255,255,.72);
+      font-size: 12px;
+      cursor: pointer;
+      user-select: none;
+      margin: 0;
+    }
+
+    .logo-recolor-toggle input {
+      width: 15px;
+      height: 15px;
+      accent-color: var(--green);
+    }
+
+    .logo-recolor-color {
+      width: 42px !important;
+      height: 30px !important;
+      border-radius: 8px !important;
+      cursor: pointer;
+    }
+
     button {
       min-height: 40px;
       border: 0;
@@ -898,7 +930,7 @@
       logoControls.innerHTML = "";
       state.logos = {};
       Object.entries(state.config.logoSlots).forEach(([slotId, slot]) => {
-        state.logos[slotId] = { image: null, scale: 1 };
+        state.logos[slotId] = { image: null, scale: 1, recolor: false, color: "#ffffff" };
         const wrapper = document.createElement("div");
         wrapper.className = "logo-slot";
         wrapper.innerHTML = `
@@ -915,6 +947,13 @@
           <div class="logo-extra">
             <div class="slider-head"><span>Size</span><span>1.00</span></div>
             <input type="range" min="0.40" max="2.50" step="0.05" value="1.00" />
+            <div class="logo-recolor-row">
+              <label class="logo-recolor-toggle">
+                <input class="logo-recolor-checkbox" type="checkbox" />
+                Recolor logo
+              </label>
+              <input class="logo-recolor-color" type="color" value="#ffffff" />
+            </div>
             <p class="small-note">Box center: x:${slot.x}, y:${slot.y}, ${slot.width}×${slot.height || slot.width}px. Logo keeps aspect ratio.</p>
           </div>`;
         const optionsButton = wrapper.querySelector(".options-button");
@@ -922,9 +961,13 @@
         const fileInput = wrapper.querySelector("input[type='file']");
         const rangeInput = wrapper.querySelector("input[type='range']");
         const rangeValue = wrapper.querySelector(".slider-head span:last-child");
+        const recolorCheckbox = wrapper.querySelector(".logo-recolor-checkbox");
+        const recolorColorInput = wrapper.querySelector(".logo-recolor-color");
         optionsButton.addEventListener("click", () => wrapper.classList.toggle("open"));
         fileInput.addEventListener("change", async (event) => { try { state.logos[slotId].image = await loadLogoFile(event.target.files?.[0]); updateGeneratedTexture(); setStatus(`${slot.label || slotId} loaded.`); } catch (error) { console.error(error); setStatus(`${slot.label || slotId} failed to load.`); } });
         rangeInput.addEventListener("input", (event) => { state.logos[slotId].scale = Number(event.target.value); rangeValue.textContent = state.logos[slotId].scale.toFixed(2); updateGeneratedTexture(); });
+        recolorCheckbox.addEventListener("change", (event) => { state.logos[slotId].recolor = event.target.checked; updateGeneratedTexture(); });
+        recolorColorInput.addEventListener("input", (event) => { state.logos[slotId].color = normalizeHex(event.target.value, "#ffffff"); updateGeneratedTexture(); });
         clearButton.addEventListener("click", () => { state.logos[slotId].image = null; fileInput.value = ""; updateGeneratedTexture(); setStatus(`${slot.label || slotId} cleared.`); });
         logoControls.appendChild(wrapper);
       });
@@ -1062,7 +1105,24 @@
       ctx.save();
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
-      ctx.drawImage(logo.image, drawX, drawY, drawWidth, drawHeight);
+
+      if (logo.recolor) {
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = Math.max(1, Math.round(drawWidth));
+        tempCanvas.height = Math.max(1, Math.round(drawHeight));
+        const tempCtx = tempCanvas.getContext("2d");
+        tempCtx.imageSmoothingEnabled = true;
+        tempCtx.imageSmoothingQuality = "high";
+        tempCtx.drawImage(logo.image, 0, 0, tempCanvas.width, tempCanvas.height);
+        tempCtx.globalCompositeOperation = "source-in";
+        tempCtx.fillStyle = normalizeHex(logo.color || "#ffffff", "#ffffff");
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        tempCtx.globalCompositeOperation = "source-over";
+        ctx.drawImage(tempCanvas, drawX, drawY, drawWidth, drawHeight);
+      } else {
+        ctx.drawImage(logo.image, drawX, drawY, drawWidth, drawHeight);
+      }
+
       ctx.restore();
     }
 
