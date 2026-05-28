@@ -1116,7 +1116,7 @@
         const clearButton = wrapper.querySelector(".clear-button");
         const fileInput = wrapper.querySelector(".logo-file-input");
         const fileName = wrapper.querySelector(".file-name");
-        const rangeInput = wrapper.querySelector(".logo-scale-range");
+        const rangeInput = wrapper.querySelector("input[type='range']");
         const rangeValue = wrapper.querySelector(".slider-head span:last-child");
         const recolorCheckbox = wrapper.querySelector(".logo-recolor-checkbox");
         const recolorColorInput = wrapper.querySelector(".logo-recolor-color");
@@ -1407,14 +1407,13 @@
 
       for (let i = 0; i < steps; i += 1) {
         const angle = (i / steps) * Math.PI * 2;
-        const dx = Math.cos(angle) * radius;
-        const dy = Math.sin(angle) * radius;
-        borderCtx.drawImage(sourceCanvas, dx, dy);
+        borderCtx.drawImage(sourceCanvas, Math.cos(angle) * radius, Math.sin(angle) * radius);
       }
 
       borderCtx.globalCompositeOperation = "source-in";
       borderCtx.fillStyle = toGameSafeColor(borderColor || "#ffffff");
       borderCtx.fillRect(0, 0, w, h);
+
       borderCtx.globalCompositeOperation = "destination-out";
       borderCtx.drawImage(sourceCanvas, 0, 0);
       borderCtx.globalCompositeOperation = "source-over";
