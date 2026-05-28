@@ -382,6 +382,38 @@
       margin-bottom: 6px;
     }
 
+    .logo-recolor-row {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .logo-recolor-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(255,255,255,.72);
+      font-size: 12px;
+      cursor: pointer;
+      user-select: none;
+      margin: 0;
+    }
+
+    .logo-recolor-toggle input {
+      width: 15px;
+      height: 15px;
+      accent-color: var(--green);
+    }
+
+    .logo-recolor-color {
+      width: 42px !important;
+      height: 30px !important;
+      border-radius: 8px !important;
+      cursor: pointer;
+    }
+
     button {
       min-height: 40px;
       border: 0;
@@ -643,6 +675,7 @@
             <p class="muted">Downloads only the generated color texture PNG.</p>
             <div class="two-buttons">
               <button id="resetButton" class="secondary-button">Reset Template</button>
+              <button id="randomizeButton" class="secondary-button">Randomize Colors</button>
             </div>
           </div>
         </details>
@@ -733,7 +766,6 @@
       autoRotate: false,
       model: null,
       generatedTexture: null,
-      normalMap: null,
       maskImage: null,
       maskSampleCanvas: null,
       maskSampleCtx: null,
@@ -756,6 +788,7 @@
     const downloadButton = document.getElementById("downloadButton");
     const downloadButtonMobile = document.getElementById("downloadButtonMobile");
     const resetButton = document.getElementById("resetButton");
+    const randomizeButton = document.getElementById("randomizeButton");
     const colorModalBackdrop = document.getElementById("colorModalBackdrop");
     const colorModalClose = document.getElementById("colorModalClose");
     const colorModalTitle = document.getElementById("colorModalTitle");
@@ -811,19 +844,6 @@
 
       return safe.toLowerCase();
     }
-    function isNearColor(r, g, b, target, tolerance = 30) { return Math.abs(r - target.r) <= tolerance && Math.abs(g - target.g) <= tolerance && Math.abs(b - target.b) <= tolerance; }
-    function colorDistance(r, g, b, target) { const dr = r - target.r; const dg = g - target.g; const db = b - target.b; return Math.sqrt(dr * dr + dg * dg + db * db); }
-    function getNearestZoneReplacement(r, g, b, zones) {
-      let bestZone = null;
-      let bestDistance = Infinity;
-      zones.forEach((zone) => {
-        const distance = colorDistance(r, g, b, zone.target);
-        if (distance < bestDistance) { bestDistance = distance; bestZone = zone; }
-      });
-      return bestZone ? bestZone.replacement : { r: 0, g: 0, b: 0 };
-    }
-    function validateConfig(config) { return Boolean(config && config.id && config.name && config.model && config.idMask && config.output && Number.isFinite(config.output.width) && Number.isFinite(config.output.height) && config.colorZones && config.logoSlots); }
-
     const RANDOM_COLOR_POOL = [
       "#d8001d", "#b40024", "#f06b00", "#f0b90b", "#ffc83d", "#b6d11f", "#38b95d", "#117837",
       "#2899ab", "#126270", "#3570b8", "#173f86", "#0b2cff", "#7f2bb4", "#551485", "#b83377",
@@ -837,60 +857,65 @@
     }
 
     function pickRandomZoneColor(zone) {
-      // If a config zone has randomColors, use those first.
       if (Array.isArray(zone.randomColors) && zone.randomColors.length > 0) {
         return toGameSafeColor(normalizeHex(pickRandomFrom(zone.randomColors), zone.defaultColor || "#111111"));
       }
 
-      // If a config zone should not randomize, keep its default.
       if (zone.randomize === false) {
         return toGameSafeColor(normalizeHex(zone.defaultColor || "#111111"));
       }
 
-      // If the original default is grayscale/no-hue, keep it in a safe neutral range.
       const defaultColor = normalizeHex(zone.defaultColor || "#111111");
       if (isNeutralColor(hexToRgb(defaultColor))) return pickRandomFrom(RANDOM_NEUTRAL_POOL);
 
       return toGameSafeColor(pickRandomFrom(RANDOM_COLOR_POOL));
     }
+
+    function randomizeAllZoneColors() {
+      if (!state.config || !state.config.colorZones) return;
+      Object.entries(state.config.colorZones).forEach(([zoneId, zone]) => {
+        setZoneColor(zoneId, pickRandomZoneColor(zone));
+      });
+    }
+
+    function isNearColor(r, g, b, target, tolerance = 30) { return Math.abs(r - target.r) <= tolerance && Math.abs(g - target.g) <= tolerance && Math.abs(b - target.b) <= tolerance; }
+    function colorDistance(r, g, b, target) { const dr = r - target.r; const dg = g - target.g; const db = b - target.b; return Math.sqrt(dr * dr + dg * dg + db * db); }
+    function getNearestZoneReplacement(r, g, b, zones) {
+      let bestZone = null;
+      let bestDistance = Infinity;
+      zones.forEach((zone) => {
+        const distance = colorDistance(r, g, b, zone.target);
+        if (distance < bestDistance) { bestDistance = distance; bestZone = zone; }
+      });
+      return bestZone ? bestZone.replacement : { r: 0, g: 0, b: 0 };
+    }
+    function validateConfig(config) { return Boolean(config && config.id && config.name && config.model && config.idMask && config.output && Number.isFinite(config.output.width) && Number.isFinite(config.output.height) && config.colorZones && config.logoSlots); }
     function tests() { console.assert(MANIFEST_PATH.endsWith("manifest.json")); console.assert(hexToRgb("#ff0000").r === 255); console.assert(isNearColor(250, 5, 4, { r: 255, g: 0, b: 0 }, 10)); console.assert(validateConfig(FALLBACK_CONFIGS["./config/legacy-jacket.json"])); }
 
     function initViewer() {
       viewer.querySelectorAll("canvas").forEach((canvas) => canvas.remove());
-
       scene = new THREE.Scene();
       scene.background = new THREE.Color("#f4f4f4");
-
       camera = new THREE.PerspectiveCamera(38, viewer.clientWidth / viewer.clientHeight, 0.1, 100);
       camera.position.set(0, 0.35, 4);
-
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setSize(viewer.clientWidth, viewer.clientHeight);
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.shadowMap.enabled = false;
-      renderer.toneMapping = THREE.NoToneMapping;
-      renderer.toneMappingExposure = 1;
       viewer.appendChild(renderer.domElement);
-      // Soft studio preview lighting. No RoomEnvironment, because it can break in browser/CDN builds.
-
-      scene.add(new THREE.AmbientLight("#ffffff", 1.75));
-
-      const frontLight = new THREE.DirectionalLight("#ffffff", 0.32);
-      frontLight.position.set(0, 2.5, 5);
-      scene.add(frontLight);
-
-      const leftLight = new THREE.DirectionalLight("#ffffff", 0.20);
-      leftLight.position.set(-4, 2.2, 3);
-      scene.add(leftLight);
-
-      const rightLight = new THREE.DirectionalLight("#ffffff", 0.20);
-      rightLight.position.set(4, 2.2, 3);
-      scene.add(rightLight);
-
-      const backLight = new THREE.DirectionalLight("#ffffff", 0.16);
-      backLight.position.set(0, 2.2, -5);
-      scene.add(backLight);
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.enablePan = false;
+      controls.minDistance = 2.2;
+      controls.maxDistance = 6;
+      scene.add(new THREE.HemisphereLight("#ffffff", "#707070", 1.35));
+      const keyLight = new THREE.DirectionalLight("#ffffff", 1.45);
+      keyLight.position.set(3.5, 4.5, 4.5);
+      scene.add(keyLight);
+      const fillLight = new THREE.DirectionalLight("#ffffff", 0.72);
+      fillLight.position.set(-4, 2, 3);
+      scene.add(fillLight);
 
       renderer.domElement.addEventListener("pointerdown", (event) => {
         state.pointerDown = { x: event.clientX, y: event.clientY };
@@ -903,26 +928,8 @@
     function loadImage(src) { return new Promise((resolve, reject) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => reject(new Error(`Image failed to load: ${src}`)); img.src = src; }); }
     function loadLogoFile(file) { return new Promise((resolve, reject) => { if (!file) return reject(new Error("No logo file selected.")); const url = URL.createObjectURL(file); const img = new Image(); img.onload = () => { URL.revokeObjectURL(url); resolve(img); }; img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Logo image failed to load.")); }; img.src = url; }); }
 
-    async function loadNormalMap(path) {
-      if (!path) return null;
-      try {
-        const texture = await new THREE.TextureLoader().loadAsync(path);
-        texture.flipY = Boolean(state.config?.output?.flipY);
-        // Blender setting: Color Space = Non-Color
-        texture.colorSpace = THREE.NoColorSpace;
-        texture.generateMipmaps = true;
-        texture.minFilter = THREE.LinearMipmapLinearFilter;
-        texture.magFilter = THREE.LinearFilter;
-        texture.needsUpdate = true;
-        return texture;
-      } catch (error) {
-        console.warn("Normal map failed to load:", error);
-        return null;
-      }
-    }
-
     function disposeMaterial(material) { if (!material) return; if (Array.isArray(material)) { material.forEach(disposeMaterial); return; } if (material.map) material.map.dispose?.(); material.dispose?.(); }
-    function removeCurrentModel() { if (state.model) { scene.remove(state.model); state.model.traverse((child) => { if (child.isMesh) disposeMaterial(child.material); }); state.model = null; } if (state.generatedTexture) { state.generatedTexture.dispose(); state.generatedTexture = null; } if (state.normalMap) { state.normalMap.dispose(); state.normalMap = null; } }
+    function removeCurrentModel() { if (state.model) { scene.remove(state.model); state.model.traverse((child) => { if (child.isMesh) disposeMaterial(child.material); }); state.model = null; } if (state.generatedTexture) { state.generatedTexture.dispose(); state.generatedTexture = null; } }
     function frameModel(object) { const box = new THREE.Box3().setFromObject(object); const size = box.getSize(new THREE.Vector3()); const center = box.getCenter(new THREE.Vector3()); const maxSize = Math.max(size.x, size.y, size.z) || 1; const scale = 2.8 / maxSize; object.scale.setScalar(scale); object.position.x = -center.x * scale; object.position.y = -center.y * scale - 0.05; object.position.z = -center.z * scale; }
 
     function createMaskSampler() {
@@ -959,7 +966,7 @@
       logoControls.innerHTML = "";
       state.logos = {};
       Object.entries(state.config.logoSlots).forEach(([slotId, slot]) => {
-        state.logos[slotId] = { image: null, scale: 1 };
+        state.logos[slotId] = { image: null, scale: 1, recolor: false, color: "#ffffff" };
         const wrapper = document.createElement("div");
         wrapper.className = "logo-slot";
         wrapper.innerHTML = `
@@ -976,6 +983,13 @@
           <div class="logo-extra">
             <div class="slider-head"><span>Size</span><span>1.00</span></div>
             <input type="range" min="0.40" max="2.50" step="0.05" value="1.00" />
+            <div class="logo-recolor-row">
+              <label class="logo-recolor-toggle">
+                <input class="logo-recolor-checkbox" type="checkbox" />
+                Recolor logo
+              </label>
+              <input class="logo-recolor-color" type="color" value="#ffffff" />
+            </div>
             <p class="small-note">Box center: x:${slot.x}, y:${slot.y}, ${slot.width}×${slot.height || slot.width}px. Logo keeps aspect ratio.</p>
           </div>`;
         const optionsButton = wrapper.querySelector(".options-button");
@@ -983,9 +997,13 @@
         const fileInput = wrapper.querySelector("input[type='file']");
         const rangeInput = wrapper.querySelector("input[type='range']");
         const rangeValue = wrapper.querySelector(".slider-head span:last-child");
+        const recolorCheckbox = wrapper.querySelector(".logo-recolor-checkbox");
+        const recolorColorInput = wrapper.querySelector(".logo-recolor-color");
         optionsButton.addEventListener("click", () => wrapper.classList.toggle("open"));
         fileInput.addEventListener("change", async (event) => { try { state.logos[slotId].image = await loadLogoFile(event.target.files?.[0]); updateGeneratedTexture(); setStatus(`${slot.label || slotId} loaded.`); } catch (error) { console.error(error); setStatus(`${slot.label || slotId} failed to load.`); } });
         rangeInput.addEventListener("input", (event) => { state.logos[slotId].scale = Number(event.target.value); rangeValue.textContent = state.logos[slotId].scale.toFixed(2); updateGeneratedTexture(); });
+        recolorCheckbox.addEventListener("change", (event) => { state.logos[slotId].recolor = event.target.checked; updateGeneratedTexture(); });
+        recolorColorInput.addEventListener("input", (event) => { state.logos[slotId].color = normalizeHex(event.target.value, "#ffffff"); updateGeneratedTexture(); });
         clearButton.addEventListener("click", () => { state.logos[slotId].image = null; fileInput.value = ""; updateGeneratedTexture(); setStatus(`${slot.label || slotId} cleared.`); });
         logoControls.appendChild(wrapper);
       });
@@ -1025,33 +1043,6 @@
       colorModalBackdrop.classList.remove("open");
       state.activeZoneId = null;
       markActiveZone(null);
-    }
-
-    const RANDOM_COLOR_POOL = [
-      "#d8001d", "#b40024", "#f06b00", "#f0b90b", "#ffc83d", "#b6d11f", "#38b95d", "#117837",
-      "#2899ab", "#126270", "#3570b8", "#173f86", "#0b2cff", "#7f2bb4", "#551485", "#b83377",
-      "#e88080", "#f0a867", "#ffd76b", "#dcf06f", "#9fd8ad", "#8ed0dc", "#a9c6ea", "#b77ae0", "#e077ad"
-    ];
-
-    const RANDOM_NEUTRAL_POOL = ["#1f1f1f", "#282828", "#383838", "#555555", "#707070", "#8f8f8f", "#b8b8b8", "#cfcfcf", "#e8e8e8"];
-
-    function pickRandomFrom(list) {
-      return list[Math.floor(Math.random() * list.length)];
-    }
-
-    function pickRandomZoneColor(zone) {
-      if (Array.isArray(zone.randomColors) && zone.randomColors.length > 0) {
-        return toGameSafeColor(normalizeHex(pickRandomFrom(zone.randomColors), zone.defaultColor || "#111111"));
-      }
-
-      if (zone.randomize === false) {
-        return toGameSafeColor(normalizeHex(zone.defaultColor || "#111111"));
-      }
-
-      const defaultColor = normalizeHex(zone.defaultColor || "#111111");
-      if (isNeutralColor(hexToRgb(defaultColor))) return pickRandomFrom(RANDOM_NEUTRAL_POOL);
-
-      return toGameSafeColor(pickRandomFrom(RANDOM_COLOR_POOL));
     }
 
     const GAME_SAFE_PALETTE = [
@@ -1150,7 +1141,24 @@
       ctx.save();
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
-      ctx.drawImage(logo.image, drawX, drawY, drawWidth, drawHeight);
+
+      if (logo.recolor) {
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = Math.max(1, Math.round(drawWidth));
+        tempCanvas.height = Math.max(1, Math.round(drawHeight));
+        const tempCtx = tempCanvas.getContext("2d");
+        tempCtx.imageSmoothingEnabled = true;
+        tempCtx.imageSmoothingQuality = "high";
+        tempCtx.drawImage(logo.image, 0, 0, tempCanvas.width, tempCanvas.height);
+        tempCtx.globalCompositeOperation = "source-in";
+        tempCtx.fillStyle = normalizeHex(logo.color || "#ffffff", "#ffffff");
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        tempCtx.globalCompositeOperation = "source-over";
+        ctx.drawImage(tempCanvas, drawX, drawY, drawWidth, drawHeight);
+      } else {
+        ctx.drawImage(logo.image, drawX, drawY, drawWidth, drawHeight);
+      }
+
       ctx.restore();
     }
 
@@ -1203,17 +1211,7 @@
       state.model.traverse((child) => {
         if (!child.isMesh) return;
         disposeMaterial(child.material);
-        child.material = new THREE.MeshStandardMaterial({
-          color: "#ffffff",
-          map: state.generatedTexture,
-          normalMap: state.normalMap || null,
-          // Matches your Blender Normal Map node strength.
-          normalScale: new THREE.Vector2(0.08, 0.08),
-          roughness: 1,
-          metalness: 0,
-          envMapIntensity: 0,
-          side: THREE.DoubleSide
-        });
+        child.material = new THREE.MeshLambertMaterial({ color: "#ffffff", map: state.generatedTexture, side: THREE.DoubleSide });
         child.material.needsUpdate = true;
       });
     }
@@ -1232,7 +1230,6 @@
       state.config = config;
       const modelPath = resolveAssetPath(config.model, configUrl);
       const maskPath = resolveAssetPath(config.idMask, configUrl);
-      const normalPath = resolveAssetPath(config.normalMap, configUrl);
       outfitTitle.textContent = config.name;
       templateInfo.innerHTML = `Type: <strong>${config.type || "outfit"}</strong><br>Output: <strong>${config.output.width}×${config.output.height}</strong><br>Model: <strong>${config.model}</strong><br>Mask: <strong>${config.idMask}</strong>`;
       createColorControls();
@@ -1243,13 +1240,6 @@
       scene.add(state.model);
       updateGeneratedTexture();
       setStatus(`Loaded: ${config.name}<br>${modelPath}<br>${maskPath}<br>Click a colored part on the 3D outfit to edit it.`);
-
-      // Load the normal map AFTER the outfit is visible, so the viewer doesn't feel slow.
-      state.normalMap = await loadNormalMap(normalPath);
-      if (state.normalMap) {
-        applyMaterialToModel();
-        setStatus(`Loaded: ${config.name}<br>${modelPath}<br>${maskPath}<br>Subtle normal map preview enabled.`);
-      }
     }
 
     function downloadTexture() { const canvas = buildTextureFromMask(); if (!canvas || !state.config) return; const link = document.createElement("a"); link.download = `${state.config.id || "outfit"}_generated_texture.png`; link.href = canvas.toDataURL("image/png"); link.click(); }
@@ -1257,6 +1247,7 @@
     downloadButton.addEventListener("click", downloadTexture);
     downloadButtonMobile.addEventListener("click", downloadTexture);
     resetButton.addEventListener("click", () => { if (state.currentConfigUrl) loadOutfit(state.currentConfigUrl).catch((error) => setStatus(error.message)); });
+    randomizeButton.addEventListener("click", randomizeAllZoneColors);
     outfitSelect.addEventListener("change", (event) => { loadOutfit(event.target.value).catch((error) => { console.error(error); setStatus(`Could not load outfit.<br>${error.message}`); }); });
     colorModalBackdrop.addEventListener("click", (event) => { if (event.target === colorModalBackdrop) closeColorModal(); });
     document.querySelector(".color-modal").addEventListener("click", (event) => event.stopPropagation());
@@ -1269,7 +1260,7 @@
     window.addEventListener("keydown", (event) => { if (event.key === "Escape") closeColorModal(); });
     window.addEventListener("resize", () => { if (!camera || !renderer) return; camera.aspect = viewer.clientWidth / viewer.clientHeight; camera.updateProjectionMatrix(); renderer.setSize(viewer.clientWidth, viewer.clientHeight); });
     function animate() { requestAnimationFrame(animate); if (state.autoRotate && state.model) state.model.rotation.y += 0.006; controls.update(); renderer.render(scene, camera); }
-    async function init() { tests(); initViewer(); await loadManifest(); const firstConfig = outfitSelect.value; await loadOutfit(firstConfig); animate(); }
+    async function init() { initViewer(); setStatus("Loading manifest..."); await loadManifest(); const firstConfig = outfitSelect.value; await loadOutfit(firstConfig); animate(); }
     init().catch((error) => { console.error(error); setStatus(`Startup failed.<br>${error.message}`); });
   </script>
 </body>
