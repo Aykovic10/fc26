@@ -677,6 +677,16 @@
     function isValidHex(hex) { return typeof hex === "string" && /^#[0-9A-Fa-f]{6}$/.test(hex); }
     function normalizeHex(value, fallback = "#111111") { return isValidHex(value) ? value : fallback; }
     function isNearColor(r, g, b, target, tolerance = 30) { return Math.abs(r - target.r) <= tolerance && Math.abs(g - target.g) <= tolerance && Math.abs(b - target.b) <= tolerance; }
+    function colorDistance(r, g, b, target) { const dr = r - target.r; const dg = g - target.g; const db = b - target.b; return Math.sqrt(dr * dr + dg * dg + db * db); }
+    function getNearestZoneReplacement(r, g, b, zones) {
+      let bestZone = null;
+      let bestDistance = Infinity;
+      zones.forEach((zone) => {
+        const distance = colorDistance(r, g, b, zone.target);
+        if (distance < bestDistance) { bestDistance = distance; bestZone = zone; }
+      });
+      return bestZone ? bestZone.replacement : { r: 0, g: 0, b: 0 };
+    }
     function validateConfig(config) { return Boolean(config && config.id && config.name && config.model && config.idMask && config.output && Number.isFinite(config.output.width) && Number.isFinite(config.output.height) && config.colorZones && config.logoSlots); }
     function tests() { console.assert(MANIFEST_PATH.endsWith("manifest.json")); console.assert(hexToRgb("#ff0000").r === 255); console.assert(isNearColor(250, 5, 4, { r: 255, g: 0, b: 0 }, 10)); console.assert(validateConfig(FALLBACK_CONFIGS["./config/legacy-jacket.json"])); }
 
@@ -893,8 +903,16 @@
       for (let i = 0; i < data.length; i += 4) {
         const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
         if (a === 0) continue;
-        let replacement = { r: 0, g: 0, b: 0 };
-        for (const zone of zones) { if (isNearColor(r, g, b, zone.target, 30)) { replacement = zone.replacement; break; } }
+        let replacement = null;
+        for (const zone of zones) { if (isNearColor(r, g, b, zone.target, 38)) { replacement = zone.replacement; break; } }
+
+        // Anti-aliased PNG edges are not exact RGB mask colors. Previously those pixels became black,
+        // which created ugly black outlines. For any visible non-black pixel, map it to the nearest zone.
+        if (!replacement) {
+          const isPureBlackOrEmpty = r < 8 && g < 8 && b < 8;
+          replacement = isPureBlackOrEmpty ? { r: 0, g: 0, b: 0 } : getNearestZoneReplacement(r, g, b, zones);
+        }
+
         data[i] = replacement.r; data[i + 1] = replacement.g; data[i + 2] = replacement.b;
       }
       ctx.putImageData(imageData, 0, 0);
