@@ -422,6 +422,26 @@
       cursor: pointer;
     }
 
+    .logo-border-width-row {
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .logo-border-width-row input[type="range"] {
+      width: 100%;
+    }
+
+    .logo-border-width-value {
+      min-width: 38px;
+      text-align: right;
+      color: rgba(255,255,255,.72);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
     .logo-extra {
       border-top: 1px solid var(--line-soft);
       padding: 9px;
@@ -1042,7 +1062,7 @@
       logoControls.innerHTML = "";
       state.logos = {};
       Object.entries(state.config.logoSlots).forEach(([slotId, slot]) => {
-        state.logos[slotId] = { image: null, scale: 1, recolor: false, color: "#ffffff", background: false, backgroundColor: "#1f1f1f" };
+        state.logos[slotId] = { image: null, scale: 1, recolor: false, color: "#ffffff", background: false, backgroundColor: "#1f1f1f", border: false, borderColor: "#ffffff", borderWidth: 4 };
         const wrapper = document.createElement("div");
         wrapper.className = "logo-slot";
         wrapper.innerHTML = `
@@ -1079,18 +1099,33 @@
               </label>
               <input class="logo-background-color logo-option-color" type="color" value="#1f1f1f" />
             </div>
+            <div class="logo-option-row">
+              <label class="logo-option-toggle">
+                <input class="logo-border-checkbox" type="checkbox" />
+                Border
+              </label>
+              <input class="logo-border-color logo-option-color" type="color" value="#ffffff" />
+            </div>
+            <div class="logo-border-width-row">
+              <input class="logo-border-width" type="range" min="1" max="18" step="1" value="4" />
+              <span class="logo-border-width-value">4px</span>
+            </div>
             <p class="small-note">Box center: x:${slot.x}, y:${slot.y}, ${slot.width}×${slot.height || slot.width}px. Background follows logo shape.</p>
           </div>`;
         const optionsButton = wrapper.querySelector(".options-button");
         const clearButton = wrapper.querySelector(".clear-button");
         const fileInput = wrapper.querySelector(".logo-file-input");
         const fileName = wrapper.querySelector(".file-name");
-        const rangeInput = wrapper.querySelector("input[type='range']");
+        const rangeInput = wrapper.querySelector(".logo-scale-range");
         const rangeValue = wrapper.querySelector(".slider-head span:last-child");
         const recolorCheckbox = wrapper.querySelector(".logo-recolor-checkbox");
         const recolorColorInput = wrapper.querySelector(".logo-recolor-color");
         const backgroundCheckbox = wrapper.querySelector(".logo-background-checkbox");
         const backgroundColorInput = wrapper.querySelector(".logo-background-color");
+        const borderCheckbox = wrapper.querySelector(".logo-border-checkbox");
+        const borderColorInput = wrapper.querySelector(".logo-border-color");
+        const borderWidthInput = wrapper.querySelector(".logo-border-width");
+        const borderWidthValue = wrapper.querySelector(".logo-border-width-value");
         optionsButton.addEventListener("click", () => wrapper.classList.toggle("open"));
         fileInput.addEventListener("change", async (event) => {
           try {
@@ -1109,6 +1144,13 @@
         recolorColorInput.addEventListener("input", (event) => { state.logos[slotId].color = normalizeHex(event.target.value, "#ffffff"); updateGeneratedTexture(); });
         backgroundCheckbox.addEventListener("change", (event) => { state.logos[slotId].background = event.target.checked; updateGeneratedTexture(); });
         backgroundColorInput.addEventListener("input", (event) => { state.logos[slotId].backgroundColor = toGameSafeColor(event.target.value); updateGeneratedTexture(); });
+        borderCheckbox.addEventListener("change", (event) => { state.logos[slotId].border = event.target.checked; updateGeneratedTexture(); });
+        borderColorInput.addEventListener("input", (event) => { state.logos[slotId].borderColor = toGameSafeColor(event.target.value); updateGeneratedTexture(); });
+        borderWidthInput.addEventListener("input", (event) => {
+          state.logos[slotId].borderWidth = Number(event.target.value);
+          borderWidthValue.textContent = `${state.logos[slotId].borderWidth}px`;
+          updateGeneratedTexture();
+        });
         clearButton.addEventListener("click", () => { state.logos[slotId].image = null; fileInput.value = ""; fileName.textContent = "No file"; updateGeneratedTexture(); setStatus(`${slot.label || slotId} cleared.`); });
         logoControls.appendChild(wrapper);
       });
@@ -1317,6 +1359,69 @@
       return canvas;
     }
 
+    function createLogoCompositeCanvas(logo, drawWidth, drawHeight) {
+      const compositeCanvas = document.createElement("canvas");
+      compositeCanvas.width = Math.max(1, Math.round(drawWidth));
+      compositeCanvas.height = Math.max(1, Math.round(drawHeight));
+      const compositeCtx = compositeCanvas.getContext("2d");
+      compositeCtx.imageSmoothingEnabled = true;
+      compositeCtx.imageSmoothingQuality = "high";
+
+      if (logo.background) {
+        const bgCanvas = buildEnclosedLogoBackground(logo.image, drawWidth, drawHeight, logo.backgroundColor || "#1f1f1f");
+        compositeCtx.drawImage(bgCanvas, 0, 0, compositeCanvas.width, compositeCanvas.height);
+      }
+
+      if (logo.recolor) {
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = compositeCanvas.width;
+        tempCanvas.height = compositeCanvas.height;
+        const tempCtx = tempCanvas.getContext("2d");
+        tempCtx.imageSmoothingEnabled = true;
+        tempCtx.imageSmoothingQuality = "high";
+        tempCtx.drawImage(logo.image, 0, 0, tempCanvas.width, tempCanvas.height);
+        tempCtx.globalCompositeOperation = "source-in";
+        tempCtx.fillStyle = normalizeHex(logo.color || "#ffffff", "#ffffff");
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        tempCtx.globalCompositeOperation = "source-over";
+        compositeCtx.drawImage(tempCanvas, 0, 0);
+      } else {
+        compositeCtx.drawImage(logo.image, 0, 0, compositeCanvas.width, compositeCanvas.height);
+      }
+
+      return compositeCanvas;
+    }
+
+    function buildLogoBorderCanvas(sourceCanvas, borderColor, borderWidth) {
+      const w = sourceCanvas.width;
+      const h = sourceCanvas.height;
+      const borderCanvas = document.createElement("canvas");
+      borderCanvas.width = w;
+      borderCanvas.height = h;
+      const borderCtx = borderCanvas.getContext("2d");
+      borderCtx.imageSmoothingEnabled = true;
+      borderCtx.imageSmoothingQuality = "high";
+
+      const radius = Math.max(1, Math.round(borderWidth || 1));
+      const steps = Math.max(16, radius * 12);
+
+      for (let i = 0; i < steps; i += 1) {
+        const angle = (i / steps) * Math.PI * 2;
+        const dx = Math.cos(angle) * radius;
+        const dy = Math.sin(angle) * radius;
+        borderCtx.drawImage(sourceCanvas, dx, dy);
+      }
+
+      borderCtx.globalCompositeOperation = "source-in";
+      borderCtx.fillStyle = toGameSafeColor(borderColor || "#ffffff");
+      borderCtx.fillRect(0, 0, w, h);
+      borderCtx.globalCompositeOperation = "destination-out";
+      borderCtx.drawImage(sourceCanvas, 0, 0);
+      borderCtx.globalCompositeOperation = "source-over";
+
+      return borderCanvas;
+    }
+
     function drawLogoSlot(ctx, slotId) {
       const slot = state.config.logoSlots[slotId];
       const logo = state.logos[slotId];
@@ -1340,29 +1445,14 @@
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
 
-      if (logo.background) {
-        // Fill only the enclosed transparent space inside the uploaded logo.
-        // Example: a black PSG outline on transparent background becomes a pink badge with black outlines.
-        const bgCanvas = buildEnclosedLogoBackground(logo.image, drawWidth, drawHeight, logo.backgroundColor || "#1f1f1f");
-        ctx.drawImage(bgCanvas, drawX, drawY, drawWidth, drawHeight);
+      const compositeCanvas = createLogoCompositeCanvas(logo, drawWidth, drawHeight);
+
+      if (logo.border) {
+        const borderCanvas = buildLogoBorderCanvas(compositeCanvas, logo.borderColor || "#ffffff", logo.borderWidth || 4);
+        ctx.drawImage(borderCanvas, drawX, drawY, drawWidth, drawHeight);
       }
 
-      if (logo.recolor) {
-        const tempCanvas = document.createElement("canvas");
-        tempCanvas.width = Math.max(1, Math.round(drawWidth));
-        tempCanvas.height = Math.max(1, Math.round(drawHeight));
-        const tempCtx = tempCanvas.getContext("2d");
-        tempCtx.imageSmoothingEnabled = true;
-        tempCtx.imageSmoothingQuality = "high";
-        tempCtx.drawImage(logo.image, 0, 0, tempCanvas.width, tempCanvas.height);
-        tempCtx.globalCompositeOperation = "source-in";
-        tempCtx.fillStyle = normalizeHex(logo.color || "#ffffff", "#ffffff");
-        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-        tempCtx.globalCompositeOperation = "source-over";
-        ctx.drawImage(tempCanvas, drawX, drawY, drawWidth, drawHeight);
-      } else {
-        ctx.drawImage(logo.image, drawX, drawY, drawWidth, drawHeight);
-      }
+      ctx.drawImage(compositeCanvas, drawX, drawY, drawWidth, drawHeight);
 
       ctx.restore();
     }
