@@ -382,6 +382,36 @@
       margin-bottom: 6px;
     }
 
+    .logo-recolor-row {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .logo-recolor-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(255,255,255,.72);
+      font-size: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .logo-recolor-toggle input {
+      width: 15px;
+      height: 15px;
+      accent-color: var(--green);
+    }
+
+    .logo-recolor-color {
+      width: 42px !important;
+      height: 30px !important;
+      border-radius: 8px !important;
+    }
+
     button {
       min-height: 40px;
       border: 0;
@@ -492,88 +522,6 @@
       outline: none;
     }
 
-    .palette-tabs {
-      display: flex;
-      gap: 10px;
-      margin: 6px 0 10px;
-      font-size: 13px;
-    }
-
-    .palette-tab {
-      color: rgba(255,255,255,.66);
-      padding-bottom: 6px;
-      border-bottom: 2px solid transparent;
-    }
-
-    .palette-tab.active {
-      color: #fff;
-      border-bottom-color: var(--green);
-    }
-
-    .palette-grid {
-      display: grid;
-      grid-template-columns: repeat(9, 1fr);
-      gap: 4px;
-      margin: 10px 0 12px;
-    }
-
-    .palette-swatch {
-      width: 100%;
-      aspect-ratio: 1;
-      min-height: 28px;
-      border-radius: 0;
-      border: 1px solid rgba(255,255,255,.20);
-      cursor: pointer;
-      position: relative;
-    }
-
-    .palette-swatch.active::after {
-      content: "✓";
-      position: absolute;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      color: white;
-      font-size: 18px;
-      font-weight: 900;
-      text-shadow: 0 1px 4px rgba(0,0,0,.8);
-    }
-
-    .safe-color-note {
-      margin-top: 8px;
-      color: rgba(255,255,255,.48);
-      font-size: 11px;
-      line-height: 1.4;
-    }
-
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      margin-top: 14px;
-    }
-
-    .modal-actions button {
-      min-height: 34px;
-      border-radius: 9px;
-      padding: 0 10px;
-    }
-
-    .modal-actions .apply-button {
-      background: #fff;
-      color: #000;
-    }
-
-    .modal-actions .apply-all-button {
-      background: rgba(255,255,255,.12);
-      color: #fff;
-    }
-
-    .modal-actions .cancel-button {
-      background: rgba(255,255,255,.12);
-      color: rgba(255,255,255,.82);
-    }
-
     @media (max-width: 980px) {
       body { overflow: auto; height: auto; }
       .app { height: auto; grid-template-columns: 1fr; }
@@ -678,19 +626,8 @@
           </div>
           <button id="colorModalClose" class="modal-close" type="button">×</button>
         </div>
-        <div class="palette-tabs">
-          <div class="palette-tab active">Default</div>
-          <div class="palette-tab">Preset</div>
-        </div>
-        <div id="paletteGrid" class="palette-grid"></div>
         <input id="modalColorInput" class="big-color-input" type="color" value="#111111" />
         <input id="modalColorText" class="modal-color-text" type="text" value="#111111" />
-        <p class="safe-color-note">Game-safe colors: pure black becomes #1f1f1f and pure white becomes #e8e8e8.</p>
-        <div class="modal-actions">
-          <button id="modalCancelButton" class="cancel-button" type="button">Cancel</button>
-          <button id="modalApplyAllButton" class="apply-all-button" type="button">Apply all</button>
-          <button id="modalApplyButton" class="apply-button" type="button">Apply</button>
-        </div>
       </div>
     </div>
   </main>
@@ -741,8 +678,7 @@
       colorInputs: {},
       activeZoneId: null,
       logos: {},
-      pointerDown: { x: 0, y: 0 },
-      pendingModalColor: "#111111"
+      pointerDown: { x: 0, y: 0 }
     };
 
     const viewer = document.getElementById("viewer");
@@ -762,10 +698,6 @@
     const colorModalSubtitle = document.getElementById("colorModalSubtitle");
     const modalColorInput = document.getElementById("modalColorInput");
     const modalColorText = document.getElementById("modalColorText");
-    const paletteGrid = document.getElementById("paletteGrid");
-    const modalCancelButton = document.getElementById("modalCancelButton");
-    const modalApplyButton = document.getElementById("modalApplyButton");
-    const modalApplyAllButton = document.getElementById("modalApplyAllButton");
 
     let scene, camera, renderer, controls;
     const raycaster = new THREE.Raycaster();
@@ -775,42 +707,6 @@
     function hexToRgb(hex) { const clean = String(hex || "#000000").replace("#", ""); return { r: parseInt(clean.slice(0, 2), 16), g: parseInt(clean.slice(2, 4), 16), b: parseInt(clean.slice(4, 6), 16) }; }
     function isValidHex(hex) { return typeof hex === "string" && /^#[0-9A-Fa-f]{6}$/.test(hex); }
     function normalizeHex(value, fallback = "#111111") { return isValidHex(value) ? value : fallback; }
-    function numberToTwoDigitHex(value) {
-      return Math.max(0, Math.min(255, value)).toString(16).padStart(2, "0");
-    }
-
-    function rgbToHex(r, g, b) {
-      return `#${numberToTwoDigitHex(r)}${numberToTwoDigitHex(g)}${numberToTwoDigitHex(b)}`;
-    }
-
-    function isNeutralColor(rgb, tolerance = 3) {
-      const max = Math.max(rgb.r, rgb.g, rgb.b);
-      const min = Math.min(rgb.r, rgb.g, rgb.b);
-      return max - min <= tolerance;
-    }
-
-    function remapNeutralGray(gray) {
-      // Game-safe grayscale remap:
-      // 0   -> 31  (#1f1f1f)
-      // 32  -> 56  (#383838)
-      // 223 -> 207 (#cfcfcf)
-      // 255 -> 232 (#e8e8e8)
-      return 31 + Math.round((gray / 255) * 201);
-    }
-
-    function toGameSafeColor(hex) {
-      const safe = normalizeHex(hex);
-      const rgb = hexToRgb(safe);
-
-      // Only neutral/no-hue colors get remapped. Real colors stay unchanged.
-      if (isNeutralColor(rgb)) {
-        const gray = Math.round((rgb.r + rgb.g + rgb.b) / 3);
-        const safeGray = remapNeutralGray(gray);
-        return rgbToHex(safeGray, safeGray, safeGray);
-      }
-
-      return safe.toLowerCase();
-    }
     function isNearColor(r, g, b, target, tolerance = 30) { return Math.abs(r - target.r) <= tolerance && Math.abs(g - target.g) <= tolerance && Math.abs(b - target.b) <= tolerance; }
     function colorDistance(r, g, b, target) { const dr = r - target.r; const dg = g - target.g; const db = b - target.b; return Math.sqrt(dr * dr + dg * dg + db * db); }
     function getNearestZoneReplacement(r, g, b, zones) {
@@ -827,39 +723,46 @@
 
     function initViewer() {
       viewer.querySelectorAll("canvas").forEach((canvas) => canvas.remove());
-
       scene = new THREE.Scene();
       scene.background = new THREE.Color("#f4f4f4");
-
       camera = new THREE.PerspectiveCamera(38, viewer.clientWidth / viewer.clientHeight, 0.1, 100);
       camera.position.set(0, 0.35, 4);
-
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setSize(viewer.clientWidth, viewer.clientHeight);
       renderer.outputColorSpace = THREE.SRGBColorSpace;
-      renderer.shadowMap.enabled = false;
       renderer.toneMapping = THREE.NoToneMapping;
       renderer.toneMappingExposure = 1;
+      renderer.shadowMap.enabled = false;
       viewer.appendChild(renderer.domElement);
-      // Soft studio preview lighting. No RoomEnvironment, because it can break in browser/CDN builds.
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.enablePan = false;
+      controls.minDistance = 2.2;
+      controls.maxDistance = 6;
 
-      scene.add(new THREE.AmbientLight("#ffffff", 1.75));
+      // Blender Material Preview-style setup:
+      // Scene Lights OFF / Scene World OFF feel, with a soft neutral studio light rig.
+      // This avoids the broken RoomEnvironment import and keeps the model evenly lit.
+      scene.add(new THREE.AmbientLight("#ffffff", 1.25));
 
-      const frontLight = new THREE.DirectionalLight("#ffffff", 0.32);
+      const hemiLight = new THREE.HemisphereLight("#ffffff", "#b8b8b8", 0.95);
+      scene.add(hemiLight);
+
+      const frontLight = new THREE.DirectionalLight("#ffffff", 0.38);
       frontLight.position.set(0, 2.5, 5);
       scene.add(frontLight);
 
-      const leftLight = new THREE.DirectionalLight("#ffffff", 0.20);
-      leftLight.position.set(-4, 2.2, 3);
+      const leftLight = new THREE.DirectionalLight("#ffffff", 0.26);
+      leftLight.position.set(-4, 2.5, 3);
       scene.add(leftLight);
 
-      const rightLight = new THREE.DirectionalLight("#ffffff", 0.20);
-      rightLight.position.set(4, 2.2, 3);
+      const rightLight = new THREE.DirectionalLight("#ffffff", 0.26);
+      rightLight.position.set(4, 2.5, 3);
       scene.add(rightLight);
 
       const backLight = new THREE.DirectionalLight("#ffffff", 0.16);
-      backLight.position.set(0, 2.2, -5);
+      backLight.position.set(0, 2.5, -5);
       scene.add(backLight);
 
       renderer.domElement.addEventListener("pointerdown", (event) => {
@@ -868,21 +771,30 @@
       renderer.domElement.addEventListener("click", handleViewerClick);
     }
 
+    function cacheBustUrl(url) {
+      if (!url || url.startsWith("blob:") || url.startsWith("data:")) return url;
+      const separator = url.includes("?") ? "&" : "?";
+      return `${url}${separator}v=${Date.now()}`;
+    }
+
     function resolveAssetPath(path, configUrl) { if (!path) return null; if (/^(https?:)?\/\//.test(path) || path.startsWith("./") || path.startsWith("/")) return path; const baseUrl = new URL(configUrl, window.location.href); return new URL(path, baseUrl).href; }
-    function loadJson(url) { return fetch(url).then((response) => { if (!response.ok) throw new Error(`Could not load JSON: ${url}`); return response.json(); }); }
-    function loadImage(src) { return new Promise((resolve, reject) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => reject(new Error(`Image failed to load: ${src}`)); img.src = src; }); }
+    function loadJson(url, useCacheBust = false) { const finalUrl = useCacheBust ? cacheBustUrl(url) : url; return fetch(finalUrl, { cache: "no-store" }).then((response) => { if (!response.ok) throw new Error(`Could not load JSON: ${url}`); return response.json(); }); }
+    function loadImage(src, useCacheBust = false) { return new Promise((resolve, reject) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => reject(new Error(`Image failed to load: ${src}`)); img.src = useCacheBust ? cacheBustUrl(src) : src; }); }
     function loadLogoFile(file) { return new Promise((resolve, reject) => { if (!file) return reject(new Error("No logo file selected.")); const url = URL.createObjectURL(file); const img = new Image(); img.onload = () => { URL.revokeObjectURL(url); resolve(img); }; img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Logo image failed to load.")); }; img.src = url; }); }
 
-    async function loadNormalMap(path) {
+    async function loadNormalTexture(path) {
       if (!path) return null;
       try {
         const texture = await new THREE.TextureLoader().loadAsync(path);
+        // Blender normal texture settings:
+        // Color Space = Non-Color, Projection = Flat, Extension = Repeat.
         texture.flipY = Boolean(state.config?.output?.flipY);
-        // Blender setting: Color Space = Non-Color
         texture.colorSpace = THREE.NoColorSpace;
-        texture.generateMipmaps = true;
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
         texture.minFilter = THREE.LinearMipmapLinearFilter;
         texture.magFilter = THREE.LinearFilter;
+        texture.generateMipmaps = true;
         texture.needsUpdate = true;
         return texture;
       } catch (error) {
@@ -929,7 +841,7 @@
       logoControls.innerHTML = "";
       state.logos = {};
       Object.entries(state.config.logoSlots).forEach(([slotId, slot]) => {
-        state.logos[slotId] = { image: null, scale: 1 };
+        state.logos[slotId] = { image: null, scale: 1, recolor: false, color: "#ffffff" };
         const wrapper = document.createElement("div");
         wrapper.className = "logo-slot";
         wrapper.innerHTML = `
@@ -946,6 +858,13 @@
           <div class="logo-extra">
             <div class="slider-head"><span>Size</span><span>1.00</span></div>
             <input type="range" min="0.40" max="2.50" step="0.05" value="1.00" />
+            <div class="logo-recolor-row">
+              <label class="logo-recolor-toggle">
+                <input class="logo-recolor-checkbox" type="checkbox" />
+                Recolor logo
+              </label>
+              <input class="logo-recolor-color" type="color" value="#ffffff" />
+            </div>
             <p class="small-note">Box center: x:${slot.x}, y:${slot.y}, ${slot.width}×${slot.height || slot.width}px. Logo keeps aspect ratio.</p>
           </div>`;
         const optionsButton = wrapper.querySelector(".options-button");
@@ -953,16 +872,20 @@
         const fileInput = wrapper.querySelector("input[type='file']");
         const rangeInput = wrapper.querySelector("input[type='range']");
         const rangeValue = wrapper.querySelector(".slider-head span:last-child");
+        const recolorCheckbox = wrapper.querySelector(".logo-recolor-checkbox");
+        const recolorColorInput = wrapper.querySelector(".logo-recolor-color");
         optionsButton.addEventListener("click", () => wrapper.classList.toggle("open"));
         fileInput.addEventListener("change", async (event) => { try { state.logos[slotId].image = await loadLogoFile(event.target.files?.[0]); updateGeneratedTexture(); setStatus(`${slot.label || slotId} loaded.`); } catch (error) { console.error(error); setStatus(`${slot.label || slotId} failed to load.`); } });
         rangeInput.addEventListener("input", (event) => { state.logos[slotId].scale = Number(event.target.value); rangeValue.textContent = state.logos[slotId].scale.toFixed(2); updateGeneratedTexture(); });
+        recolorCheckbox.addEventListener("change", (event) => { state.logos[slotId].recolor = event.target.checked; updateGeneratedTexture(); });
+        recolorColorInput.addEventListener("input", (event) => { state.logos[slotId].color = normalizeHex(event.target.value, "#ffffff"); updateGeneratedTexture(); });
         clearButton.addEventListener("click", () => { state.logos[slotId].image = null; fileInput.value = ""; updateGeneratedTexture(); setStatus(`${slot.label || slotId} cleared.`); });
         logoControls.appendChild(wrapper);
       });
     }
 
     function setZoneColor(zoneId, color) {
-      const safeColor = toGameSafeColor(normalizeHex(color, state.colorValues[zoneId] || "#111111"));
+      const safeColor = normalizeHex(color, state.colorValues[zoneId] || "#111111");
       state.colorValues[zoneId] = safeColor;
       if (state.colorInputs[zoneId]) state.colorInputs[zoneId].value = safeColor;
       if (state.activeZoneId === zoneId) {
@@ -981,13 +904,11 @@
       const zone = state.config.colorZones[zoneId];
       state.activeZoneId = zoneId;
       markActiveZone(zoneId);
-      const currentColor = toGameSafeColor(state.colorValues[zoneId] || zone.defaultColor || "#111111");
-      state.pendingModalColor = currentColor;
+      const currentColor = normalizeHex(state.colorValues[zoneId] || zone.defaultColor || "#111111");
       colorModalTitle.textContent = zone.label || zoneId;
       colorModalSubtitle.textContent = `Mask color: ${zone.maskColor} — click outside to close.`;
       modalColorInput.value = currentColor;
       modalColorText.value = currentColor;
-      renderPalette(currentColor);
       colorModalBackdrop.classList.add("open");
     }
 
@@ -995,48 +916,6 @@
       colorModalBackdrop.classList.remove("open");
       state.activeZoneId = null;
       markActiveZone(null);
-    }
-
-    const GAME_SAFE_PALETTE = [
-      "#1f1f1f", "#282828", "#3a3a3a", "#555555", "#707070", "#8f8f8f", "#b8b8b8", "#d2d2d2", "#e8e8e8",
-      "#e88080", "#f0a867", "#ffd76b", "#dcf06f", "#9fd8ad", "#8ed0dc", "#a9c6ea", "#b77ae0", "#e077ad",
-      "#d84d4d", "#f58a2a", "#ffc83d", "#d4ea40", "#62c77c", "#53b8c8", "#6d9ad8", "#9a53cc", "#d45d94",
-      "#c82d2d", "#f06b00", "#f0b90b", "#b6d11f", "#38b95d", "#2899ab", "#3570b8", "#7f2bb4", "#b83377",
-      "#941414", "#a34f00", "#c99a00", "#779000", "#117837", "#126270", "#173f86", "#551485", "#781345"
-    ];
-
-    function renderPalette(activeColor = "#111111") {
-      paletteGrid.innerHTML = "";
-      GAME_SAFE_PALETTE.forEach((color) => {
-        const swatch = document.createElement("button");
-        swatch.type = "button";
-        swatch.className = "palette-swatch";
-        swatch.style.background = color;
-        swatch.setAttribute("aria-label", `Choose ${color}`);
-        swatch.classList.toggle("active", color.toLowerCase() === activeColor.toLowerCase());
-        swatch.addEventListener("click", () => setPendingModalColor(color));
-        paletteGrid.appendChild(swatch);
-      });
-    }
-
-    function setPendingModalColor(color) {
-      const safeColor = toGameSafeColor(color);
-      state.pendingModalColor = safeColor;
-      modalColorInput.value = safeColor;
-      modalColorText.value = safeColor;
-      renderPalette(safeColor);
-    }
-
-    function applyPendingModalColor() {
-      if (!state.activeZoneId) return;
-      setZoneColor(state.activeZoneId, state.pendingModalColor);
-      closeColorModal();
-    }
-
-    function applyPendingModalColorToAllZones() {
-      const safeColor = toGameSafeColor(state.pendingModalColor);
-      Object.keys(state.colorValues).forEach((zoneId) => setZoneColor(zoneId, safeColor));
-      closeColorModal();
     }
 
     function getZoneIdFromUv(uv) {
@@ -1090,10 +969,32 @@
       const boxY = Number(slot.y) - boxHeight / 2;
       const drawX = boxX + (boxWidth - drawWidth) / 2;
       const drawY = boxY + (boxHeight - drawHeight) / 2;
+
       ctx.save();
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
-      ctx.drawImage(logo.image, drawX, drawY, drawWidth, drawHeight);
+
+      if (logo.recolor) {
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = Math.max(1, Math.round(drawWidth));
+        tempCanvas.height = Math.max(1, Math.round(drawHeight));
+        const tempCtx = tempCanvas.getContext("2d");
+        tempCtx.imageSmoothingEnabled = true;
+        tempCtx.imageSmoothingQuality = "high";
+        tempCtx.drawImage(logo.image, 0, 0, tempCanvas.width, tempCanvas.height);
+
+        // Recolor keeps only the logo transparency/shape and replaces visible pixels with one color.
+        // This works best with transparent PNG brand/sponsor logos.
+        tempCtx.globalCompositeOperation = "source-in";
+        tempCtx.fillStyle = normalizeHex(logo.color || "#ffffff", "#ffffff");
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        tempCtx.globalCompositeOperation = "source-over";
+
+        ctx.drawImage(tempCanvas, drawX, drawY, drawWidth, drawHeight);
+      } else {
+        ctx.drawImage(logo.image, drawX, drawY, drawWidth, drawHeight);
+      }
+
       ctx.restore();
     }
 
@@ -1150,8 +1051,8 @@
           color: "#ffffff",
           map: state.generatedTexture,
           normalMap: state.normalMap || null,
-          // Matches your Blender Normal Map node strength.
-          normalScale: new THREE.Vector2(0.08, 0.08),
+          // Matches your Blender Normal Map node. Lower this to 0.20 if a specific normal is too strong.
+          normalScale: new THREE.Vector2(0.35, 0.35),
           roughness: 1,
           metalness: 0,
           envMapIntensity: 0,
@@ -1162,8 +1063,8 @@
     }
 
     function loadModel(path) { return new Promise((resolve, reject) => { const loader = new FBXLoader(); loader.load(path, (object) => { object.traverse((child) => { if (!child.isMesh) return; child.castShadow = false; child.receiveShadow = false; }); frameModel(object); resolve(object); }, undefined, reject); }); }
-    async function loadManifest() { try { state.manifest = await loadJson(MANIFEST_PATH); setStatus("Loaded outfits manifest."); } catch (error) { console.warn("Manifest not found. Using fallback legacy config.", error); state.manifest = FALLBACK_MANIFEST; setStatus("Manifest not found. Using fallback legacy test jacket."); } outfitSelect.innerHTML = ""; state.manifest.outfits.forEach((item) => { const option = document.createElement("option"); option.value = item.config; option.textContent = item.name || item.id; outfitSelect.appendChild(option); }); }
-    async function loadConfig(configUrl) { if (FALLBACK_CONFIGS[configUrl]) return FALLBACK_CONFIGS[configUrl]; return loadJson(configUrl); }
+    async function loadManifest() { try { state.manifest = await loadJson(MANIFEST_PATH, true); setStatus("Loaded outfits manifest."); } catch (error) { console.warn("Manifest not found. Using fallback legacy config.", error); state.manifest = FALLBACK_MANIFEST; setStatus("Manifest not found. Using fallback legacy test jacket."); } outfitSelect.innerHTML = ""; state.manifest.outfits.forEach((item) => { const option = document.createElement("option"); option.value = item.config; option.textContent = item.name || item.id; outfitSelect.appendChild(option); }); }
+    async function loadConfig(configUrl) { if (FALLBACK_CONFIGS[configUrl]) return FALLBACK_CONFIGS[configUrl]; return loadJson(configUrl, true); }
 
     async function loadOutfit(configUrl) {
       setStatus("Loading outfit...");
@@ -1180,18 +1081,18 @@
       templateInfo.innerHTML = `Type: <strong>${config.type || "outfit"}</strong><br>Output: <strong>${config.output.width}×${config.output.height}</strong><br>Model: <strong>${config.model}</strong><br>Mask: <strong>${config.idMask}</strong>`;
       createColorControls();
       createLogoControls();
-      state.maskImage = await loadImage(maskPath);
+      state.maskImage = await loadImage(maskPath, true);
       createMaskSampler();
       state.model = await loadModel(modelPath);
       scene.add(state.model);
       updateGeneratedTexture();
       setStatus(`Loaded: ${config.name}<br>${modelPath}<br>${maskPath}<br>Click a colored part on the 3D outfit to edit it.`);
 
-      // Load the normal map AFTER the outfit is visible, so the viewer doesn't feel slow.
-      state.normalMap = await loadNormalMap(normalPath);
+      // Load normal map after the outfit is already visible, so startup stays fast.
+      state.normalMap = await loadNormalTexture(normalPath);
       if (state.normalMap) {
         applyMaterialToModel();
-        setStatus(`Loaded: ${config.name}<br>${modelPath}<br>${maskPath}<br>Subtle normal map preview enabled.`);
+        setStatus(`Loaded: ${config.name}<br>${modelPath}<br>${maskPath}<br>Normal map preview enabled. Blender-like: Non-Color, roughness 1, metallic 0.`);
       }
     }
 
@@ -1204,11 +1105,8 @@
     colorModalBackdrop.addEventListener("click", (event) => { if (event.target === colorModalBackdrop) closeColorModal(); });
     document.querySelector(".color-modal").addEventListener("click", (event) => event.stopPropagation());
     colorModalClose.addEventListener("click", closeColorModal);
-    modalColorInput.addEventListener("input", (event) => { setPendingModalColor(event.target.value); });
-    modalColorText.addEventListener("change", (event) => { setPendingModalColor(event.target.value); });
-    modalCancelButton.addEventListener("click", closeColorModal);
-    modalApplyButton.addEventListener("click", applyPendingModalColor);
-    modalApplyAllButton.addEventListener("click", applyPendingModalColorToAllZones);
+    modalColorInput.addEventListener("input", (event) => { if (state.activeZoneId) setZoneColor(state.activeZoneId, event.target.value); });
+    modalColorText.addEventListener("change", (event) => { if (state.activeZoneId) setZoneColor(state.activeZoneId, event.target.value); });
     window.addEventListener("keydown", (event) => { if (event.key === "Escape") closeColorModal(); });
     window.addEventListener("resize", () => { if (!camera || !renderer) return; camera.aspect = viewer.clientWidth / viewer.clientHeight; camera.updateProjectionMatrix(); renderer.setSize(viewer.clientWidth, viewer.clientHeight); });
     function animate() { requestAnimationFrame(animate); if (state.autoRotate && state.model) state.model.rotation.y += 0.006; controls.update(); renderer.render(scene, camera); }
