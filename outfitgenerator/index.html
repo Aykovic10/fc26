@@ -721,9 +721,15 @@
       renderer.domElement.addEventListener("click", handleViewerClick);
     }
 
+    function cacheBustUrl(url) {
+      if (!url || url.startsWith("blob:") || url.startsWith("data:")) return url;
+      const separator = url.includes("?") ? "&" : "?";
+      return `${url}${separator}v=${Date.now()}`;
+    }
+
     function resolveAssetPath(path, configUrl) { if (!path) return null; if (/^(https?:)?\/\//.test(path) || path.startsWith("./") || path.startsWith("/")) return path; const baseUrl = new URL(configUrl, window.location.href); return new URL(path, baseUrl).href; }
-    function loadJson(url) { return fetch(url).then((response) => { if (!response.ok) throw new Error(`Could not load JSON: ${url}`); return response.json(); }); }
-    function loadImage(src) { return new Promise((resolve, reject) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => reject(new Error(`Image failed to load: ${src}`)); img.src = src; }); }
+    function loadJson(url, useCacheBust = false) { const finalUrl = useCacheBust ? cacheBustUrl(url) : url; return fetch(finalUrl, { cache: "no-store" }).then((response) => { if (!response.ok) throw new Error(`Could not load JSON: ${url}`); return response.json(); }); }
+    function loadImage(src, useCacheBust = false) { return new Promise((resolve, reject) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => reject(new Error(`Image failed to load: ${src}`)); img.src = useCacheBust ? cacheBustUrl(src) : src; }); }
     function loadLogoFile(file) { return new Promise((resolve, reject) => { if (!file) return reject(new Error("No logo file selected.")); const url = URL.createObjectURL(file); const img = new Image(); img.onload = () => { URL.revokeObjectURL(url); resolve(img); }; img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Logo image failed to load.")); }; img.src = url; }); }
 
     function disposeMaterial(material) { if (!material) return; if (Array.isArray(material)) { material.forEach(disposeMaterial); return; } if (material.map) material.map.dispose?.(); material.dispose?.(); }
@@ -942,9 +948,9 @@
       });
     }
 
-    function loadModel(path) { return new Promise((resolve, reject) => { const loader = new FBXLoader(); loader.load(path, (object) => { object.traverse((child) => { if (!child.isMesh) return; child.castShadow = false; child.receiveShadow = false; }); frameModel(object); resolve(object); }, undefined, reject); }); }
-    async function loadManifest() { try { state.manifest = await loadJson(MANIFEST_PATH); setStatus("Loaded outfits manifest."); } catch (error) { console.warn("Manifest not found. Using fallback legacy config.", error); state.manifest = FALLBACK_MANIFEST; setStatus("Manifest not found. Using fallback legacy test jacket."); } outfitSelect.innerHTML = ""; state.manifest.outfits.forEach((item) => { const option = document.createElement("option"); option.value = item.config; option.textContent = item.name || item.id; outfitSelect.appendChild(option); }); }
-    async function loadConfig(configUrl) { if (FALLBACK_CONFIGS[configUrl]) return FALLBACK_CONFIGS[configUrl]; return loadJson(configUrl); }
+    function loadModel(path) { return new Promise((resolve, reject) => { const loader = new FBXLoader(); loader.load(cacheBustUrl(path), (object) => { object.traverse((child) => { if (!child.isMesh) return; child.castShadow = false; child.receiveShadow = false; }); frameModel(object); resolve(object); }, undefined, reject); }); }
+    async function loadManifest() { try { state.manifest = await loadJson(MANIFEST_PATH, true); setStatus("Loaded outfits manifest."); } catch (error) { console.warn("Manifest not found. Using fallback legacy config.", error); state.manifest = FALLBACK_MANIFEST; setStatus("Manifest not found. Using fallback legacy test jacket."); } outfitSelect.innerHTML = ""; state.manifest.outfits.forEach((item) => { const option = document.createElement("option"); option.value = item.config; option.textContent = item.name || item.id; outfitSelect.appendChild(option); }); }
+    async function loadConfig(configUrl) { if (FALLBACK_CONFIGS[configUrl]) return FALLBACK_CONFIGS[configUrl]; return loadJson(configUrl, true); }
 
     async function loadOutfit(configUrl) {
       setStatus("Loading outfit...");
@@ -960,7 +966,7 @@
       templateInfo.innerHTML = `Type: <strong>${config.type || "outfit"}</strong><br>Output: <strong>${config.output.width}×${config.output.height}</strong><br>Model: <strong>${config.model}</strong><br>Mask: <strong>${config.idMask}</strong>`;
       createColorControls();
       createLogoControls();
-      state.maskImage = await loadImage(maskPath);
+      state.maskImage = await loadImage(maskPath, true);
       createMaskSampler();
       state.model = await loadModel(modelPath);
       scene.add(state.model);
