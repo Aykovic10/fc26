@@ -1,0 +1,72 @@
+{
+  "id": "nike-tech-fleece-jacket",
+  "name": "Nike Tech Fleece Jacket",
+  "type": "Jacket",
+
+  "model": "model.fbx",
+  "idMask": "idmask.png",
+  "normalMap": "normal.png",
+
+  "output": {
+    "width": 2048,
+    "height": 2048,
+    "flipY": true
+  },
+
+  "material": {
+    "roughness": 0.72,
+    "metalness": 0.02
+  },
+
+  "colorZones": {
+    "body": {
+      "label": "Main Body",
+      "maskColor": "#ff0000",
+      "defaultColor": "#111111"
+    },
+    "bodyAlt": {
+      "label": "Body Secondary",
+      "maskColor": "#0000ff",
+      "defaultColor": "#d8001d"
+    },
+    "stripeAlt": {
+      "label": "Hem and Zipper",
+      "maskColor": "#12ff00",
+      "defaultColor": "#ffffff"
+    },
+    "pocket": {
+      "label": "Pocket",
+      "maskColor": "#ff00ff",
+      "defaultColor": "#282828"
+    },
+    "pocketOut": {
+      "label": "Pocket Border",
+      "maskColor": "#ffff00",
+      "defaultColor": "#282828"
+    }
+  },
+
+  "logoSlots": {
+    "team": {
+      "label": "Team Logo",
+      "x": 555,
+      "y": 236,
+      "width": 100,
+      "height": 100
+    },
+    "brand": {
+      "label": "Brand Logo",
+      "x": 628,
+      "y": 236,
+      "width": 100,
+      "height": 100
+    },
+    "sponsor": {
+      "label": "Sponsor Logo",
+      "x": 628,
+      "y": 315,
+      "width": 100,
+      "height": 65
+    }
+  }
+}
