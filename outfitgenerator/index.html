@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FC26 Outfit Generator</title>
+  <link rel="icon" type="image/webp" href="https://cdn.buymeacoffee.com/uploads/profile_pictures/2024/05/e31c55d0bc66ff537c0e507db85699ff.png@300w_0e.webp" />
+  <link rel="shortcut icon" type="image/webp" href="https://cdn.buymeacoffee.com/uploads/profile_pictures/2024/05/e31c55d0bc66ff537c0e507db85699ff.png@300w_0e.webp" />
   <style>
     * { box-sizing: border-box; }
 
@@ -27,7 +29,7 @@
     .app {
       height: 100vh;
       display: grid;
-      grid-template-columns: 64px 380px 1fr;
+      grid-template-columns: 380px 1fr;
       background: #080808;
     }
 
@@ -50,6 +52,14 @@
       background: #fff;
       color: #000;
       font-weight: 900;
+      overflow: hidden;
+    }
+
+    .brand-logo-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
     }
 
     .rail-button {
@@ -180,6 +190,7 @@
     canvas { display: block; width: 100%; height: 100%; }
 
     .status {
+      display: none;
       position: absolute;
       left: 18px;
       bottom: 18px;
@@ -507,6 +518,32 @@
       cursor: pointer;
     }
 
+    .view-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px;
+      border-radius: 14px;
+      background: rgba(0,0,0,.05);
+      border: 1px solid rgba(0,0,0,.08);
+    }
+
+    .view-button {
+      min-height: 32px;
+      border-radius: 10px;
+      padding: 0 10px;
+      background: transparent;
+      color: rgba(0,0,0,.66);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .view-button.active,
+    .view-button:hover {
+      background: #111;
+      color: #fff;
+    }
+
     button {
       min-height: 40px;
       border: 0;
@@ -533,7 +570,7 @@
 
     .bottom-bar {
       position: fixed;
-      left: 64px;
+      left: 0;
       bottom: 0;
       width: 380px;
       padding: 10px;
@@ -702,7 +739,6 @@
     @media (max-width: 980px) {
       body { overflow: auto; height: auto; }
       .app { height: auto; grid-template-columns: 1fr; }
-      .rail { display: none; }
       .sidebar { order: 2; overflow: visible; border-right: 0; }
       .viewer-shell { order: 1; height: auto; min-height: 70vh; }
       .viewer { height: 58vh; min-height: 420px; }
@@ -713,22 +749,17 @@
 </head>
 <body>
   <main class="app">
-    <nav class="rail" aria-label="Sections">
-      <div class="rail-logo">FC</div>
-      <button class="rail-button active" title="Template">👕</button>
-      <button class="rail-button" title="Colors">🎨</button>
-      <button class="rail-button" title="Logos">⭐</button>
-      <button class="rail-button" title="Export">⬇</button>
-    </nav>
-
-    <aside class="sidebar">
+<aside class="sidebar">
       <div class="sidebar-header">
         <div class="sidebar-title">
-          <h1>Outfit Creator</h1>
+          <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+            <div class="rail-logo"><img class="brand-logo-img" src="https://cdn.buymeacoffee.com/uploads/profile_pictures/2024/05/e31c55d0bc66ff537c0e507db85699ff.png@300w_0e.webp" alt="FC26" /></div>
+            <h1>Outfit Creator</h1>
+          </div>
           <div class="login-pill">FC26</div>
         </div>
         <div class="promo">
-          <div>Template Generator<span>FBX + RGB mask + logos</span></div>
+          <div>Template Generator<span>Create custom manager outfits</span></div>
           <div>⚙</div>
         </div>
       </div>
@@ -742,7 +773,7 @@
               <label for="outfitSelect">Template</label>
               <select id="outfitSelect"></select>
             </div>
-            <p id="templateInfo" class="small-note">Waiting for manifest...</p>
+            <p id="templateInfo" class="small-note">Loading templates...</p>
           </div>
         </details>
 
@@ -765,7 +796,7 @@
         <details class="panel-card">
           <summary>Export / Reset</summary>
           <div class="panel-inner">
-            <p class="muted">Downloads only the generated color texture PNG.</p>
+            <p class="muted">Download a ZIP with the generated texture and normal map when available.</p>
             <div class="two-buttons">
               <button id="resetButton" class="secondary-button">Reset Template</button>
               <button id="randomizeButton" class="secondary-button">Randomize Colors</button>
@@ -782,7 +813,13 @@
           <h1 id="outfitTitle">Loading outfit...</h1>
         </div>
         <div class="top-tools">
-          <button id="rotateButton" class="secondary-button">Start Rotate</button>
+          <div class="view-controls" aria-label="View options">
+            <button class="view-button active" data-view="front" type="button">Front</button>
+            <button class="view-button" data-view="left" type="button">Side</button>
+            <button class="view-button" data-view="back" type="button">Back</button>
+            <button class="view-button" data-view="right" type="button">Side Back</button>
+            <button class="view-button" data-view="rotate" type="button">Rotate</button>
+          </div>
           <button id="downloadButton" class="main-button">Download PNG</button>
         </div>
       </div>
@@ -886,8 +923,8 @@
     const templateInfo = document.getElementById("templateInfo");
     const colorControls = document.getElementById("colorControls");
     const logoControls = document.getElementById("logoControls");
-    const rotateButton = document.getElementById("rotateButton");
     const downloadButton = document.getElementById("downloadButton");
+    const viewButtons = document.querySelectorAll(".view-button");
     const downloadButtonMobile = document.getElementById("downloadButtonMobile");
     const resetButton = document.getElementById("resetButton");
     const randomizeButton = document.getElementById("randomizeButton");
@@ -906,7 +943,7 @@
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
 
-    function setStatus(text) { status.innerHTML = text; }
+    function setStatus(text) { console.log(String(text || "").replace(/<br>/g, " ")); }
     function hexToRgb(hex) { const clean = String(hex || "#000000").replace("#", ""); return { r: parseInt(clean.slice(0, 2), 16), g: parseInt(clean.slice(2, 4), 16), b: parseInt(clean.slice(4, 6), 16) }; }
     function isValidHex(hex) { return typeof hex === "string" && /^#[0-9A-Fa-f]{6}$/.test(hex); }
     function normalizeHex(value, fallback = "#111111") { return isValidHex(value) ? value : fallback; }
@@ -1153,10 +1190,10 @@
             state.logos[slotId].image = await loadLogoFile(file);
             fileName.textContent = file?.name || "Logo loaded";
             updateGeneratedTexture();
-            setStatus(`${slot.label || slotId} loaded.`);
+
           } catch (error) {
             console.error(error);
-            setStatus(`${slot.label || slotId} failed to load.`);
+
           }
         });
         rangeInput.addEventListener("input", (event) => { state.logos[slotId].scale = Number(event.target.value); rangeValue.textContent = state.logos[slotId].scale.toFixed(2); updateGeneratedTexture(); });
@@ -1171,7 +1208,7 @@
           borderWidthValue.textContent = `${state.logos[slotId].borderWidth}px`;
           updateGeneratedTexture();
         });
-        clearButton.addEventListener("click", () => { state.logos[slotId].image = null; fileInput.value = ""; fileName.textContent = "No file"; updateGeneratedTexture(); setStatus(`${slot.label || slotId} cleared.`); });
+        clearButton.addEventListener("click", () => { state.logos[slotId].image = null; fileInput.value = ""; fileName.textContent = "No file"; updateGeneratedTexture(); });
         logoControls.appendChild(wrapper);
       });
     }
@@ -1185,6 +1222,7 @@
         modalColorText.value = safeColor;
       }
       updateGeneratedTexture();
+      setView("front");
     }
 
     function markActiveZone(zoneId) {
@@ -1282,7 +1320,7 @@
       const zoneId = getZoneIdFromUv(hit.uv);
       if (zoneId) {
         openColorModal(zoneId);
-        setStatus(`Editing color zone: ${state.config.colorZones[zoneId].label || zoneId}`);
+
       }
     }
 
@@ -1531,19 +1569,55 @@
     }
 
     function loadModel(path) { return new Promise((resolve, reject) => { const loader = new FBXLoader(); loader.load(path, (object) => { object.traverse((child) => { if (!child.isMesh) return; child.castShadow = false; child.receiveShadow = false; }); frameModel(object); resolve(object); }, undefined, reject); }); }
-    async function loadManifest() {
-      const manifestPaths = [
-        MANIFEST_PATH,
-        "outfits/manifest.json",
-        "/outfitgenerator/outfits/manifest.json"
-      ];
+    function getCategoryName(type) {
+      const value = String(type || "Other").trim();
+      return value ? value.replace(/-/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase()) : "Other";
+    }
 
+    async function enrichManifestOutfits() {
+      const enriched = [];
+      for (const item of state.manifest.outfits) {
+        try {
+          const config = await loadConfig(item.config);
+          enriched.push({ ...item, type: config.type || item.type || "Other", name: item.name || config.name || item.id });
+        } catch (error) {
+          console.warn("Could not read outfit config for category:", item, error);
+          enriched.push({ ...item, type: item.type || "Other", name: item.name || item.id });
+        }
+      }
+      return enriched;
+    }
+
+    function populateOutfitSelect(items) {
+      outfitSelect.innerHTML = "";
+      const groups = new Map();
+
+      items.forEach((item) => {
+        const category = getCategoryName(item.type);
+        if (!groups.has(category)) groups.set(category, []);
+        groups.get(category).push(item);
+      });
+
+      groups.forEach((groupItems, category) => {
+        const optgroup = document.createElement("optgroup");
+        optgroup.label = category;
+        groupItems.forEach((item) => {
+          const option = document.createElement("option");
+          option.value = item.config;
+          option.textContent = item.name || item.id;
+          optgroup.appendChild(option);
+        });
+        outfitSelect.appendChild(optgroup);
+      });
+    }
+
+    async function loadManifest() {
+      const manifestPaths = [MANIFEST_PATH, "outfits/manifest.json", "/outfitgenerator/outfits/manifest.json"];
       let lastError = null;
 
       for (const manifestPath of manifestPaths) {
         try {
           state.manifest = await loadJson(manifestPath, true);
-          setStatus(`Loaded outfits manifest.<br>${manifestPath}`);
           break;
         } catch (error) {
           lastError = error;
@@ -1554,16 +1628,10 @@
       if (!state.manifest) {
         console.warn("All manifest paths failed. Using fallback legacy config.", lastError);
         state.manifest = FALLBACK_MANIFEST;
-        setStatus(`Manifest not found, using fallback legacy test jacket.<br>${lastError?.message || ""}`);
       }
 
-      outfitSelect.innerHTML = "";
-      state.manifest.outfits.forEach((item) => {
-        const option = document.createElement("option");
-        option.value = item.config;
-        option.textContent = item.name || item.id;
-        outfitSelect.appendChild(option);
-      });
+      const enriched = await enrichManifestOutfits();
+      populateOutfitSelect(enriched);
     }
     async function loadConfig(configUrl) {
       if (FALLBACK_CONFIGS[configUrl]) return FALLBACK_CONFIGS[configUrl];
@@ -1584,7 +1652,7 @@
       state.normalMapPath = normalPath;
       state.normalMapName = config.normalMap ? String(config.normalMap).split("/").pop() : null;
       outfitTitle.textContent = config.name;
-      templateInfo.innerHTML = `Type: <strong>${config.type || "outfit"}</strong><br>Output: <strong>${config.output.width}×${config.output.height}</strong><br>Config: <strong>${configUrl}</strong><br>Model: <strong>${config.model}</strong><br>Mask: <strong>${config.idMask}</strong>`;
+      templateInfo.innerHTML = `Category: <strong>${getCategoryName(config.type || "Outfit")}</strong><br>Texture size: <strong>${config.output.width}×${config.output.height}</strong>`;
       createColorControls();
       createLogoControls();
       state.maskImage = await loadImage(maskPath);
@@ -1592,7 +1660,6 @@
       state.model = await loadModel(modelPath);
       scene.add(state.model);
       updateGeneratedTexture();
-      setStatus(`Loaded: ${config.name}<br>${modelPath}<br>${maskPath}<br>Click a colored part on the 3D outfit to edit it.`);
     }
 
     function triggerDownload(url, filename) {
@@ -1639,11 +1706,32 @@
       const zipUrl = URL.createObjectURL(zipBlob);
       triggerDownload(zipUrl, `${outfitId}_textures.zip`);
       setTimeout(() => URL.revokeObjectURL(zipUrl), 2500);
-
-      setStatus(`Downloaded ZIP with generated texture${state.normalMapPath ? " and normal map" : ""}.`);
     }
 
-    rotateButton.addEventListener("click", () => { state.autoRotate = !state.autoRotate; rotateButton.textContent = state.autoRotate ? "Stop Rotate" : "Start Rotate"; });
+    function setView(viewName) {
+      if (!state.model) return;
+
+      state.autoRotate = viewName === "rotate";
+
+      if (!state.autoRotate) {
+        const rotations = {
+          front: 0,
+          left: -Math.PI / 2,
+          back: Math.PI,
+          right: Math.PI / 2
+        };
+        state.model.rotation.y = rotations[viewName] ?? 0;
+      }
+
+      viewButtons.forEach((button) => {
+        button.classList.toggle("active", button.dataset.view === viewName);
+      });
+    }
+
+    viewButtons.forEach((button) => {
+      button.addEventListener("click", () => setView(button.dataset.view));
+    });
+
     downloadButton.addEventListener("click", downloadTexture);
     downloadButtonMobile.addEventListener("click", downloadTexture);
     resetButton.addEventListener("click", () => { if (state.currentConfigUrl) loadOutfit(state.currentConfigUrl).catch((error) => setStatus(error.message)); });
