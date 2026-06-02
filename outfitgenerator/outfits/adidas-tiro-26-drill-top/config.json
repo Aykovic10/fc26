@@ -1,0 +1,82 @@
+{
+  "id": "adidas-tiro-26-drill-top",
+  "name": "adidas Tiro26 Drill Top",
+  "type": "Drill Top",
+
+  "model": "model.fbx",
+  "idMask": "idmask.png",
+  "normalMap": "normal.png",
+
+  "output": {
+    "width": 2048,
+    "height": 2048,
+    "flipY": true
+  },
+
+  "material": {
+    "roughness": 0.72,
+    "metalness": 0.02
+  },
+
+  "colorZones": {
+    "body": {
+      "label": "Main Body",
+      "maskColor": "#ff0000",
+      "defaultColor": "#111111"
+    },
+    "sleeves": {
+      "label": "Sleeves and Shoulders",
+      "maskColor": "#0000ff",
+      "defaultColor": "#110011"
+    },
+    "sleevesAlt": {
+      "label": "Sleeves Alt",
+      "maskColor": "#ffff00",
+      "defaultColor": "#110011"
+    }
+    "shoulderPanel": {
+      "label": "Shoulder Panels",
+      "maskColor": "#FF8000",
+      "defaultColor": "#d8001d"
+    },
+    "adidasStripes": {
+      "label": "adidas Stripes",
+      "maskColor": "#ff00ff",
+      "defaultColor": "#ffffff"
+    },
+    "sidePanel": {
+      "label": "Side Panels",
+      "maskColor": "#00ffff",
+      "defaultColor": "#282828"
+    },
+    "hemPanels": {
+      "label": "Hem Panels",
+      "maskColor": "#ff8000",
+      "defaultColor": "#282828"
+    }
+  },
+
+  "logoSlots": {
+    "team": {
+      "label": "Team Logo",
+      "x": 555,
+      "y": 1228,
+      "width": 100,
+      "height": 100
+    },
+    "brand": {
+      "label": "Brand Logo",
+      "x": 303,
+      "y": 1228,
+      "width": 100,
+      "height": 100
+    },
+    "sponsor": {
+      "label": "Sponsor Logo",
+      "x": 550,
+      "y": 1324,
+      "width": 100,
+      "height": 65
+    }
+  }
+}
