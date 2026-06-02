@@ -262,20 +262,37 @@
       inset: 0;
       z-index: 95;
       display: none;
-      background: rgba(255,255,255,.98);
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,.46);
       color: #1c1c1c;
-      padding: 18px;
-      overflow: auto;
+      padding: 22px;
+      overflow: hidden;
     }
 
-    .template-browser-backdrop.open { display: block; }
+    .template-browser-backdrop.open {
+      display: flex;
+    }
+
+    .template-browser-modal {
+      width: min(1240px, calc(100vw - 44px));
+      height: min(760px, calc(100vh - 44px));
+      background: rgba(255,255,255,.98);
+      border-radius: 24px;
+      box-shadow: 0 24px 90px rgba(0,0,0,.32);
+      border: 1px solid rgba(0,0,0,.08);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+    }
 
     .template-browser-head {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
       gap: 18px;
-      margin-bottom: 22px;
+      padding: 18px 22px 14px;
+      border-bottom: 1px solid rgba(0,0,0,.08);
     }
 
     .template-browser-title {
@@ -286,110 +303,135 @@
     }
 
     .template-browser-title img {
-      width: 72px;
-      height: 72px;
-      border-radius: 12px;
+      width: 58px;
+      height: 58px;
+      border-radius: 16px;
       object-fit: cover;
       background: #eee;
+      flex-shrink: 0;
     }
 
     .template-browser-title strong {
       display: block;
-      font-size: 20px;
-      margin-bottom: 8px;
+      font-size: 21px;
+      margin-bottom: 6px;
+      letter-spacing: -.02em;
     }
 
     .template-browser-title span {
       display: inline-block;
-      font-size: 16px;
+      font-size: 14px;
       border-bottom: 3px solid var(--green);
       padding-bottom: 4px;
+      color: rgba(0,0,0,.72);
     }
 
     .template-browser-close {
-      width: 42px;
-      height: 42px;
-      min-height: 42px;
+      width: 40px;
+      height: 40px;
+      min-height: 40px;
       border-radius: 12px;
-      background: transparent;
+      background: rgba(0,0,0,.06);
       color: #222;
-      font-size: 36px;
+      font-size: 28px;
       line-height: 1;
+    }
+
+    .template-browser-close:hover {
+      background: rgba(0,0,0,.12);
     }
 
     .template-browser-toolbar {
       display: grid;
-      grid-template-columns: minmax(180px, 280px) minmax(160px, 220px) minmax(160px, 220px) 1fr;
-      gap: 16px;
+      grid-template-columns: minmax(190px, 280px) minmax(150px, 190px) minmax(150px, 190px) 1fr;
+      gap: 12px;
       align-items: center;
-      margin-bottom: 24px;
+      padding: 14px 22px;
+      border-bottom: 1px solid rgba(0,0,0,.08);
+      background: #fafafa;
     }
 
     .template-browser-toolbar input,
     .template-browser-toolbar select {
       width: 100%;
       min-height: 38px;
-      border: 1px solid rgba(0,0,0,.18);
-      border-radius: 4px;
+      border: 1px solid rgba(0,0,0,.16);
+      border-radius: 10px;
       background: #fff;
       color: #222;
-      font-size: 16px;
-      padding: 0 8px;
+      font-size: 14px;
+      padding: 0 10px;
+      outline: none;
+    }
+
+    .template-browser-toolbar input:focus,
+    .template-browser-toolbar select:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(0,230,106,.12);
     }
 
     .template-sort-tabs {
       display: flex;
-      gap: 24px;
+      gap: 18px;
       align-items: center;
       flex-wrap: wrap;
-      font-size: 17px;
+      font-size: 14px;
       color: #2b2b2b;
+      justify-content: flex-end;
     }
 
     .template-sort-tab {
       cursor: pointer;
-      padding-bottom: 7px;
+      padding-bottom: 6px;
       border-bottom: 3px solid transparent;
       user-select: none;
+      font-weight: 700;
+      color: rgba(0,0,0,.66);
     }
 
-    .template-sort-tab.active { border-bottom-color: var(--green); }
+    .template-sort-tab.active {
+      border-bottom-color: var(--green);
+      color: #111;
+    }
 
     .template-browser-grid {
       display: grid;
       grid-template-columns: repeat(4, minmax(180px, 1fr));
-      gap: 26px;
-      padding-bottom: 30px;
+      gap: 18px;
+      padding: 20px 22px 24px;
+      overflow: auto;
+      align-content: start;
+      background: #fff;
     }
 
     .browser-card {
-      border: 1px solid rgba(0,0,0,.18);
-      background: #efefef;
-      min-height: 330px;
-      display: flex;
-      flex-direction: column;
+      border: 1px solid rgba(0,0,0,.13);
+      background: #f4f4f4;
+      display: grid;
+      grid-template-rows: 220px auto;
       cursor: pointer;
       overflow: hidden;
       text-align: left;
       padding: 0;
       color: #222;
-      border-radius: 0;
+      border-radius: 18px;
       transition: .15s ease;
+      min-height: 294px;
     }
 
     .browser-card:hover,
     .browser-card.active {
       border-color: var(--green);
-      box-shadow: inset 0 0 0 3px var(--green);
+      box-shadow: 0 0 0 3px rgba(0,230,106,.18);
+      transform: translateY(-1px);
     }
 
     .browser-card-preview {
-      flex: 1;
-      min-height: 260px;
       display: grid;
       place-items: center;
-      background: #ededed;
+      background: linear-gradient(180deg, #f1f1f1, #e9e9e9);
       overflow: hidden;
+      padding: 12px;
     }
 
     .browser-card-preview img {
@@ -400,14 +442,15 @@
     }
 
     .browser-card-preview span {
-      font-size: 76px;
+      font-size: 64px;
       opacity: .28;
     }
 
     .browser-card-meta {
-      padding: 10px 12px 12px;
-      background: rgba(255,255,255,.88);
-      border-top: 1px solid rgba(0,0,0,.10);
+      padding: 12px 14px 14px;
+      background: #fff;
+      border-top: 1px solid rgba(0,0,0,.08);
+      min-height: 72px;
     }
 
     .browser-card-meta strong {
@@ -417,13 +460,15 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      color: #111;
     }
 
     .browser-card-meta span {
       display: block;
-      margin-top: 4px;
+      margin-top: 5px;
       font-size: 12px;
       color: rgba(0,0,0,.55);
+      font-weight: 700;
     }
 
     .template-empty {
@@ -459,14 +504,33 @@
     }
 
     @media (max-width: 1100px) {
-      .template-browser-toolbar { grid-template-columns: 1fr 1fr; }
-      .template-sort-tabs { grid-column: 1 / -1; }
-      .template-browser-grid { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
+      .template-browser-toolbar {
+        grid-template-columns: 1fr 1fr;
+      }
+      .template-sort-tabs {
+        grid-column: 1 / -1;
+        justify-content: flex-start;
+      }
+      .template-browser-grid {
+        grid-template-columns: repeat(2, minmax(160px, 1fr));
+      }
     }
 
     @media (max-width: 640px) {
-      .template-browser-toolbar { grid-template-columns: 1fr; }
-      .template-browser-grid { grid-template-columns: 1fr; }
+      .template-browser-backdrop {
+        padding: 10px;
+      }
+      .template-browser-modal {
+        width: calc(100vw - 20px);
+        height: calc(100vh - 20px);
+        border-radius: 18px;
+      }
+      .template-browser-toolbar {
+        grid-template-columns: 1fr;
+      }
+      .template-browser-grid {
+        grid-template-columns: 1fr;
+      }
     }
 
     .preview-backdrop {
@@ -1226,6 +1290,7 @@
     </div>
 
     <div id="templateBrowserBackdrop" class="template-browser-backdrop">
+      <div class="template-browser-modal">
       <div class="template-browser-head">
         <div class="template-browser-title">
           <img src="https://cdn.buymeacoffee.com/uploads/profile_pictures/2024/05/e31c55d0bc66ff537c0e507db85699ff.png@300w_0e.webp" alt="FC26">
@@ -1249,6 +1314,7 @@
         </div>
       </div>
       <div id="templateCards" class="template-browser-grid"></div>
+      </div>
     </div>
 
     <div id="texturePreviewBackdrop" class="preview-backdrop">
