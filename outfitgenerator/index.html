@@ -138,6 +138,210 @@
 
     .sidebar-content { padding: 12px 10px 88px; }
 
+    .filter-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .template-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .template-card {
+      width: 100%;
+      min-height: 64px;
+      border: 1px solid var(--line-soft);
+      border-radius: 14px;
+      background: rgba(255,255,255,.035);
+      color: #fff;
+      text-align: left;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: 54px 1fr;
+      gap: 10px;
+      align-items: center;
+      cursor: pointer;
+      transition: .15s ease;
+    }
+
+    .template-card:hover,
+    .template-card.active {
+      border-color: rgba(0,230,106,.45);
+      background: rgba(0,230,106,.08);
+    }
+
+    .template-thumb {
+      width: 54px;
+      height: 54px;
+      border-radius: 12px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.08);
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      color: rgba(255,255,255,.48);
+      font-size: 20px;
+    }
+
+    .template-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .template-meta {
+      min-width: 0;
+    }
+
+    .template-meta strong {
+      display: block;
+      font-size: 13px;
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .template-meta span {
+      display: block;
+      margin-top: 4px;
+      color: rgba(255,255,255,.45);
+      font-size: 11px;
+    }
+
+    .hidden-select {
+      display: none;
+    }
+
+    .quick-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .quick-button {
+      min-height: 28px;
+      border-radius: 9px;
+      padding: 0 9px;
+      background: rgba(255,255,255,.09);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .quick-button:hover {
+      background: rgba(0,230,106,.18);
+      color: var(--green);
+    }
+
+    .file-line {
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(255,255,255,.50);
+      font-size: 11px;
+    }
+
+    .hidden-file-input {
+      display: none;
+    }
+
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 18;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(244,244,244,.72);
+      backdrop-filter: blur(5px);
+      color: #111;
+      font-weight: 900;
+    }
+
+    .loading-overlay.open {
+      display: flex;
+    }
+
+    .loader-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.92);
+      box-shadow: 0 16px 50px rgba(0,0,0,.12);
+    }
+
+    .spinner {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 3px solid rgba(0,0,0,.12);
+      border-top-color: var(--green);
+      animation: spin .8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .preview-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,.62);
+      padding: 28px;
+    }
+
+    .preview-backdrop.open { display: flex; }
+
+    .preview-modal {
+      width: min(920px, calc(100vw - 40px));
+      max-height: calc(100vh - 40px);
+      border-radius: 22px;
+      background: #111;
+      border: 1px solid rgba(255,255,255,.14);
+      overflow: hidden;
+      box-shadow: 0 24px 90px rgba(0,0,0,.55);
+    }
+
+    .preview-head {
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+    }
+
+    .preview-head strong {
+      font-size: 15px;
+    }
+
+    .preview-body {
+      padding: 14px;
+      background: #1a1a1a;
+      overflow: auto;
+      max-height: calc(100vh - 130px);
+    }
+
+    .preview-body img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 14px;
+      background: #000;
+    }
+
     .viewer-shell {
       min-width: 0;
       height: 100vh;
@@ -769,9 +973,20 @@
           <summary>Template</summary>
           <div class="panel-inner">
             <p class="muted">Choose a clothing template. The viewer stays fixed while this sidebar scrolls.</p>
+            <div class="filter-grid">
+              <div class="field">
+                <label for="brandFilter">Brand</label>
+                <select id="brandFilter"></select>
+              </div>
+              <div class="field">
+                <label for="typeFilter">Type</label>
+                <select id="typeFilter"></select>
+              </div>
+            </div>
             <div class="field">
               <label for="outfitSelect">Template</label>
-              <select id="outfitSelect"></select>
+              <select id="outfitSelect" class="hidden-select"></select>
+              <div id="templateCards" class="template-grid"></div>
             </div>
             <p id="templateInfo" class="small-note">Loading templates...</p>
           </div>
@@ -788,7 +1003,7 @@
         <details class="panel-card" open>
           <summary>Logos</summary>
           <div class="panel-inner">
-            <p class="muted">Upload logos. Click options for size and position details.</p>
+            <p class="muted">Use transparent PNG logos for best results. Click options for size, recolor, background, and border.</p>
             <div id="logoControls"></div>
           </div>
         </details>
@@ -796,11 +1011,18 @@
         <details class="panel-card">
           <summary>Export / Reset</summary>
           <div class="panel-inner">
-            <p class="muted">Download a ZIP with the generated texture and normal map when available.</p>
+            <p class="muted">Download a ZIP, preview the texture, or save your current design.</p>
             <div class="two-buttons">
-              <button id="resetButton" class="secondary-button">Reset Template</button>
-              <button id="randomizeButton" class="secondary-button">Randomize Colors</button>
+              <button id="previewTextureButton" class="secondary-button">Preview Texture</button>
+              <button id="saveDesignButton" class="secondary-button">Save Design</button>
+              <button id="loadDesignButton" class="secondary-button">Load Design</button>
+              <button id="resetColorsButton" class="secondary-button">Reset Colors</button>
+              <button id="clearLogosButton" class="secondary-button">Clear Logos</button>
+              <button id="resetButton" class="secondary-button">Reset All</button>
+              <button id="randomizeButton" class="secondary-button">Randomize Nice</button>
             </div>
+            <input id="loadDesignInput" class="hidden-file-input" type="file" accept="application/json,.json" />
+            <p class="small-note">Save Design exports a small JSON file with colors, logo effects, and selected template.</p>
           </div>
         </details>
       </div>
@@ -820,16 +1042,31 @@
             <button class="view-button" data-view="right" type="button">Side Back</button>
             <button class="view-button" data-view="rotate" type="button">Rotate</button>
           </div>
-          <button id="downloadButton" class="main-button">Download PNG</button>
+          <button id="downloadButton" class="main-button">Download ZIP</button>
         </div>
       </div>
       <div id="viewer" class="viewer">
+        <div id="loadingOverlay" class="loading-overlay">
+          <div class="loader-card"><div class="spinner"></div><span id="loadingText">Loading outfit...</span></div>
+        </div>
         <div id="status" class="status">Loading...</div>
       </div>
     </section>
 
     <div class="bottom-bar">
-      <button id="downloadButtonMobile" class="main-button" style="width:100%;">Download PNG</button>
+      <button id="downloadButtonMobile" class="main-button" style="width:100%;">Download ZIP</button>
+    </div>
+
+    <div id="texturePreviewBackdrop" class="preview-backdrop">
+      <div class="preview-modal">
+        <div class="preview-head">
+          <strong>Texture Preview</strong>
+          <button id="texturePreviewClose" class="modal-close" type="button">×</button>
+        </div>
+        <div class="preview-body">
+          <img id="texturePreviewImage" alt="Generated texture preview" />
+        </div>
+      </div>
     </div>
 
     <div id="colorModalBackdrop" class="color-modal-backdrop">
@@ -898,6 +1135,8 @@
 
     const state = {
       manifest: null,
+      enrichedOutfits: [],
+      activeFilters: { brand: "all", type: "all" },
       config: null,
       currentConfigUrl: null,
       autoRotate: false,
@@ -920,6 +1159,9 @@
     const status = document.getElementById("status");
     const outfitTitle = document.getElementById("outfitTitle");
     const outfitSelect = document.getElementById("outfitSelect");
+    const brandFilter = document.getElementById("brandFilter");
+    const typeFilter = document.getElementById("typeFilter");
+    const templateCards = document.getElementById("templateCards");
     const templateInfo = document.getElementById("templateInfo");
     const colorControls = document.getElementById("colorControls");
     const logoControls = document.getElementById("logoControls");
@@ -928,6 +1170,17 @@
     const downloadButtonMobile = document.getElementById("downloadButtonMobile");
     const resetButton = document.getElementById("resetButton");
     const randomizeButton = document.getElementById("randomizeButton");
+    const previewTextureButton = document.getElementById("previewTextureButton");
+    const saveDesignButton = document.getElementById("saveDesignButton");
+    const loadDesignButton = document.getElementById("loadDesignButton");
+    const loadDesignInput = document.getElementById("loadDesignInput");
+    const resetColorsButton = document.getElementById("resetColorsButton");
+    const clearLogosButton = document.getElementById("clearLogosButton");
+    const loadingOverlay = document.getElementById("loadingOverlay");
+    const loadingText = document.getElementById("loadingText");
+    const texturePreviewBackdrop = document.getElementById("texturePreviewBackdrop");
+    const texturePreviewClose = document.getElementById("texturePreviewClose");
+    const texturePreviewImage = document.getElementById("texturePreviewImage");
     const colorModalBackdrop = document.getElementById("colorModalBackdrop");
     const colorModalClose = document.getElementById("colorModalClose");
     const colorModalTitle = document.getElementById("colorModalTitle");
@@ -944,6 +1197,15 @@
     const pointer = new THREE.Vector2();
 
     function setStatus(text) { console.log(String(text || "").replace(/<br>/g, " ")); }
+
+    function showLoading(message = "Loading outfit...") {
+      if (loadingText) loadingText.textContent = message;
+      if (loadingOverlay) loadingOverlay.classList.add("open");
+    }
+
+    function hideLoading() {
+      if (loadingOverlay) loadingOverlay.classList.remove("open");
+    }
     function hexToRgb(hex) { const clean = String(hex || "#000000").replace("#", ""); return { r: parseInt(clean.slice(0, 2), 16), g: parseInt(clean.slice(2, 4), 16), b: parseInt(clean.slice(4, 6), 16) }; }
     function isValidHex(hex) { return typeof hex === "string" && /^#[0-9A-Fa-f]{6}$/.test(hex); }
     function normalizeHex(value, fallback = "#111111") { return isValidHex(value) ? value : fallback; }
@@ -1010,10 +1272,38 @@
       return toGameSafeColor(pickRandomFrom(RANDOM_COLOR_POOL));
     }
 
+    const NICE_COLOR_PALETTES = [
+      ["#1f1f1f", "#e8e8e8", "#d4af37"],
+      ["#1f1f1f", "#d8001d", "#e8e8e8"],
+      ["#173f86", "#e8e8e8", "#d8001d"],
+      ["#117837", "#e8e8e8", "#1f1f1f"],
+      ["#551485", "#e8e8e8", "#ffc83d"],
+      ["#cfcfcf", "#1f1f1f", "#0b2cff"],
+      ["#b40024", "#1f1f1f", "#f0b90b"],
+      ["#126270", "#e8e8e8", "#f06b00"]
+    ];
+
     function randomizeAllZoneColors() {
       if (!state.config || !state.config.colorZones) return;
+      const palette = pickRandomFrom(NICE_COLOR_PALETTES);
+      let index = 0;
+
       Object.entries(state.config.colorZones).forEach(([zoneId, zone]) => {
-        setZoneColor(zoneId, pickRandomZoneColor(zone));
+        if (Array.isArray(zone.randomColors) && zone.randomColors.length > 0) {
+          setZoneColor(zoneId, pickRandomZoneColor(zone));
+          return;
+        }
+        if (zone.randomize === false) {
+          setZoneColor(zoneId, zone.defaultColor || "#111111");
+          return;
+        }
+
+        const defaultColor = normalizeHex(zone.defaultColor || "#111111");
+        const chosen = isNeutralColor(hexToRgb(defaultColor))
+          ? pickRandomFrom(RANDOM_NEUTRAL_POOL)
+          : palette[index++ % palette.length];
+
+        setZoneColor(zoneId, chosen);
       });
     }
 
@@ -1149,6 +1439,12 @@
               </label>
               <input class="logo-recolor-color" type="color" value="#ffffff" />
             </div>
+            <div class="quick-row">
+              <button class="quick-button logo-color-preset" data-color="#ffffff" type="button">White</button>
+              <button class="quick-button logo-color-preset" data-color="#000000" type="button">Black</button>
+              <button class="quick-button logo-color-preset" data-color="#d4af37" type="button">Gold</button>
+              <button class="quick-button logo-color-team" type="button">Team color</button>
+            </div>
             <div class="logo-option-row">
               <label class="logo-option-toggle">
                 <input class="logo-background-checkbox" type="checkbox" />
@@ -1177,6 +1473,8 @@
         const rangeValue = wrapper.querySelector(".slider-head span:last-child");
         const recolorCheckbox = wrapper.querySelector(".logo-recolor-checkbox");
         const recolorColorInput = wrapper.querySelector(".logo-recolor-color");
+        const logoColorPresetButtons = wrapper.querySelectorAll(".logo-color-preset");
+        const logoColorTeamButton = wrapper.querySelector(".logo-color-team");
         const backgroundCheckbox = wrapper.querySelector(".logo-background-checkbox");
         const backgroundColorInput = wrapper.querySelector(".logo-background-color");
         const borderCheckbox = wrapper.querySelector(".logo-border-checkbox");
@@ -1199,6 +1497,25 @@
         rangeInput.addEventListener("input", (event) => { state.logos[slotId].scale = Number(event.target.value); rangeValue.textContent = state.logos[slotId].scale.toFixed(2); updateGeneratedTexture(); });
         recolorCheckbox.addEventListener("change", (event) => { state.logos[slotId].recolor = event.target.checked; updateGeneratedTexture(); });
         recolorColorInput.addEventListener("input", (event) => { state.logos[slotId].color = normalizeHex(event.target.value, "#ffffff"); updateGeneratedTexture(); });
+        logoColorPresetButtons.forEach((button) => {
+          button.addEventListener("click", () => {
+            const color = toGameSafeColor(button.dataset.color || "#ffffff");
+            state.logos[slotId].recolor = true;
+            state.logos[slotId].color = color;
+            recolorCheckbox.checked = true;
+            recolorColorInput.value = color;
+            updateGeneratedTexture();
+          });
+        });
+        logoColorTeamButton.addEventListener("click", () => {
+          const firstZoneColor = Object.values(state.colorValues)[0] || "#ffffff";
+          const color = normalizeHex(firstZoneColor, "#ffffff");
+          state.logos[slotId].recolor = true;
+          state.logos[slotId].color = color;
+          recolorCheckbox.checked = true;
+          recolorColorInput.value = color;
+          updateGeneratedTexture();
+        });
         backgroundCheckbox.addEventListener("change", (event) => { state.logos[slotId].background = event.target.checked; updateGeneratedTexture(); });
         backgroundColorInput.addEventListener("input", (event) => { state.logos[slotId].backgroundColor = toGameSafeColor(event.target.value); updateGeneratedTexture(); });
         borderCheckbox.addEventListener("change", (event) => { state.logos[slotId].border = event.target.checked; updateGeneratedTexture(); });
@@ -1223,6 +1540,8 @@
       }
       updateGeneratedTexture();
       setView("front");
+      markActiveTemplateCard(configUrl);
+      hideLoading();
     }
 
     function markActiveZone(zoneId) {
@@ -1574,22 +1893,83 @@
       return value ? value.replace(/-/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase()) : "Other";
     }
 
+    function getBrandName(config, item) {
+      const explicit = config?.brand || item?.brand;
+      if (explicit) return String(explicit).trim();
+
+      const name = String(config?.name || item?.name || item?.id || "Other");
+      const firstWord = name.split(/\s+/)[0] || "Other";
+      return firstWord.toLowerCase() === "adidas" ? "adidas" : firstWord;
+    }
+
+    function getPreviewPath(config, item, configUrl) {
+      const preview = config?.preview || item?.preview || config?.thumbnail || item?.thumbnail;
+      return preview ? resolveAssetPath(preview, configUrl) : null;
+    }
+
     async function enrichManifestOutfits() {
       const enriched = [];
       for (const item of state.manifest.outfits) {
         try {
           const config = await loadConfig(item.config);
-          enriched.push({ ...item, type: config.type || item.type || "Other", name: item.name || config.name || item.id });
+          enriched.push({
+            ...item,
+            brand: getBrandName(config, item),
+            type: config.type || item.type || "Other",
+            name: item.name || config.name || item.id,
+            preview: getPreviewPath(config, item, item.config)
+          });
         } catch (error) {
           console.warn("Could not read outfit config for category:", item, error);
-          enriched.push({ ...item, type: item.type || "Other", name: item.name || item.id });
+          enriched.push({
+            ...item,
+            brand: item.brand || "Other",
+            type: item.type || "Other",
+            name: item.name || item.id,
+            preview: item.preview || item.thumbnail || null
+          });
         }
       }
       return enriched;
     }
 
+    function fillFilterSelect(selectElement, values, currentValue) {
+      selectElement.innerHTML = "";
+      const allOption = document.createElement("option");
+      allOption.value = "all";
+      allOption.textContent = "All";
+      selectElement.appendChild(allOption);
+
+      values.forEach((value) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        selectElement.appendChild(option);
+      });
+
+      selectElement.value = values.includes(currentValue) ? currentValue : "all";
+    }
+
+    function setupTemplateFilters(items) {
+      const brands = [...new Set(items.map((item) => item.brand || "Other"))].sort((a, b) => a.localeCompare(b));
+      const types = [...new Set(items.map((item) => getCategoryName(item.type)))].sort((a, b) => a.localeCompare(b));
+
+      fillFilterSelect(brandFilter, brands, state.activeFilters.brand);
+      fillFilterSelect(typeFilter, types, state.activeFilters.type);
+    }
+
+    function getFilteredTemplates() {
+      return state.enrichedOutfits.filter((item) => {
+        const brandOk = state.activeFilters.brand === "all" || item.brand === state.activeFilters.brand;
+        const typeOk = state.activeFilters.type === "all" || getCategoryName(item.type) === state.activeFilters.type;
+        return brandOk && typeOk;
+      });
+    }
+
     function populateOutfitSelect(items) {
       outfitSelect.innerHTML = "";
+      templateCards.innerHTML = "";
+
       const groups = new Map();
 
       items.forEach((item) => {
@@ -1608,6 +1988,45 @@
           optgroup.appendChild(option);
         });
         outfitSelect.appendChild(optgroup);
+      });
+
+      items.forEach((item) => {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "template-card";
+        card.dataset.config = item.config;
+        card.innerHTML = `
+          <div class="template-thumb">${item.preview ? `<img src="${item.preview}" alt="">` : "👕"}</div>
+          <div class="template-meta">
+            <strong>${item.name || item.id}</strong>
+            <span>${item.brand || "Other"} · ${getCategoryName(item.type)}</span>
+          </div>
+        `;
+        card.addEventListener("click", () => {
+          outfitSelect.value = item.config;
+          loadOutfit(item.config).catch((error) => {
+            console.error(error);
+            console.warn(`Could not load outfit: ${error.message}`);
+          });
+        });
+        templateCards.appendChild(card);
+      });
+
+      markActiveTemplateCard(outfitSelect.value);
+    }
+
+    function renderTemplates() {
+      const filtered = getFilteredTemplates();
+      populateOutfitSelect(filtered);
+
+      if (!filtered.some((item) => item.config === outfitSelect.value) && filtered[0]) {
+        outfitSelect.value = filtered[0].config;
+      }
+    }
+
+    function markActiveTemplateCard(configUrl) {
+      document.querySelectorAll(".template-card").forEach((card) => {
+        card.classList.toggle("active", card.dataset.config === configUrl);
       });
     }
 
@@ -1630,8 +2049,9 @@
         state.manifest = FALLBACK_MANIFEST;
       }
 
-      const enriched = await enrichManifestOutfits();
-      populateOutfitSelect(enriched);
+      state.enrichedOutfits = await enrichManifestOutfits();
+      setupTemplateFilters(state.enrichedOutfits);
+      renderTemplates();
     }
     async function loadConfig(configUrl) {
       if (FALLBACK_CONFIGS[configUrl]) return FALLBACK_CONFIGS[configUrl];
@@ -1639,7 +2059,7 @@
     }
 
     async function loadOutfit(configUrl) {
-      setStatus("Loading outfit...");
+      showLoading("Loading outfit...");
       state.currentConfigUrl = configUrl;
       removeCurrentModel();
       closeColorModal();
@@ -1660,6 +2080,114 @@
       state.model = await loadModel(modelPath);
       scene.add(state.model);
       updateGeneratedTexture();
+    }
+
+    function resetColorsToDefaults() {
+      if (!state.config?.colorZones) return;
+      Object.entries(state.config.colorZones).forEach(([zoneId, zone]) => {
+        setZoneColor(zoneId, zone.defaultColor || "#111111");
+      });
+    }
+
+    function clearAllLogos() {
+      Object.keys(state.logos).forEach((slotId) => {
+        state.logos[slotId] = {
+          ...state.logos[slotId],
+          image: null
+        };
+      });
+      document.querySelectorAll(".logo-file-input").forEach((input) => { input.value = ""; });
+      document.querySelectorAll(".file-name").forEach((item) => { item.textContent = "No file"; });
+      updateGeneratedTexture();
+    }
+
+    function getDesignState() {
+      return {
+        version: 1,
+        template: state.currentConfigUrl,
+        colors: state.colorValues,
+        logos: Object.fromEntries(Object.entries(state.logos).map(([slotId, logo]) => [slotId, {
+          scale: logo.scale,
+          recolor: logo.recolor,
+          color: logo.color,
+          background: logo.background,
+          backgroundColor: logo.backgroundColor,
+          border: logo.border,
+          borderColor: logo.borderColor,
+          borderWidth: logo.borderWidth
+        }]))
+      };
+    }
+
+    function saveDesignFile() {
+      if (!state.config) return;
+      const blob = new Blob([JSON.stringify(getDesignState(), null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      triggerDownload(url, `${state.config.id || "outfit"}_design.json`);
+      setTimeout(() => URL.revokeObjectURL(url), 2500);
+    }
+
+    async function loadDesignFile(file) {
+      if (!file) return;
+      const text = await file.text();
+      const design = JSON.parse(text);
+
+      if (design.template && design.template !== state.currentConfigUrl) {
+        outfitSelect.value = design.template;
+        await loadOutfit(design.template);
+      }
+
+      if (design.colors) {
+        Object.entries(design.colors).forEach(([zoneId, color]) => {
+          if (state.config?.colorZones?.[zoneId]) setZoneColor(zoneId, color);
+        });
+      }
+
+      if (design.logos) {
+        Object.entries(design.logos).forEach(([slotId, savedLogo]) => {
+          if (!state.logos[slotId]) return;
+          Object.assign(state.logos[slotId], savedLogo, { image: state.logos[slotId].image || null });
+        });
+        syncLogoControlsFromState();
+        updateGeneratedTexture();
+      }
+    }
+
+    function syncLogoControlsFromState() {
+      document.querySelectorAll(".logo-slot").forEach((wrapper, index) => {
+        const slotId = Object.keys(state.logos)[index];
+        const logo = state.logos[slotId];
+        if (!logo) return;
+
+        const rangeInput = wrapper.querySelector("input[type='range']");
+        const rangeValue = wrapper.querySelector(".slider-head span:last-child");
+        const recolorCheckbox = wrapper.querySelector(".logo-recolor-checkbox");
+        const recolorColorInput = wrapper.querySelector(".logo-recolor-color");
+        const backgroundCheckbox = wrapper.querySelector(".logo-background-checkbox");
+        const backgroundColorInput = wrapper.querySelector(".logo-background-color");
+        const borderCheckbox = wrapper.querySelector(".logo-border-checkbox");
+        const borderColorInput = wrapper.querySelector(".logo-border-color");
+        const borderWidthInput = wrapper.querySelector(".logo-border-width");
+        const borderWidthValue = wrapper.querySelector(".logo-border-width-value");
+
+        if (rangeInput) rangeInput.value = logo.scale || 1;
+        if (rangeValue) rangeValue.textContent = Number(logo.scale || 1).toFixed(2);
+        if (recolorCheckbox) recolorCheckbox.checked = Boolean(logo.recolor);
+        if (recolorColorInput) recolorColorInput.value = normalizeHex(logo.color || "#ffffff", "#ffffff");
+        if (backgroundCheckbox) backgroundCheckbox.checked = Boolean(logo.background);
+        if (backgroundColorInput) backgroundColorInput.value = normalizeHex(logo.backgroundColor || "#1f1f1f", "#1f1f1f");
+        if (borderCheckbox) borderCheckbox.checked = Boolean(logo.border);
+        if (borderColorInput) borderColorInput.value = normalizeHex(logo.borderColor || "#ffffff", "#ffffff");
+        if (borderWidthInput) borderWidthInput.value = Number(logo.borderWidth || 4);
+        if (borderWidthValue) borderWidthValue.textContent = `${Number(logo.borderWidth || 4)}px`;
+      });
+    }
+
+    function previewTexture() {
+      const canvas = buildTextureFromMask();
+      if (!canvas) return;
+      texturePreviewImage.src = canvas.toDataURL("image/png");
+      texturePreviewBackdrop.classList.add("open");
     }
 
     function triggerDownload(url, filename) {
@@ -1736,7 +2264,20 @@
     downloadButtonMobile.addEventListener("click", downloadTexture);
     resetButton.addEventListener("click", () => { if (state.currentConfigUrl) loadOutfit(state.currentConfigUrl).catch((error) => setStatus(error.message)); });
     randomizeButton.addEventListener("click", randomizeAllZoneColors);
-    outfitSelect.addEventListener("change", (event) => { loadOutfit(event.target.value).catch((error) => { console.error(error); setStatus(`Could not load outfit.<br>${error.message}`); }); });
+    resetColorsButton.addEventListener("click", resetColorsToDefaults);
+    clearLogosButton.addEventListener("click", clearAllLogos);
+    previewTextureButton.addEventListener("click", previewTexture);
+    texturePreviewClose.addEventListener("click", () => texturePreviewBackdrop.classList.remove("open"));
+    texturePreviewBackdrop.addEventListener("click", (event) => { if (event.target === texturePreviewBackdrop) texturePreviewBackdrop.classList.remove("open"); });
+    saveDesignButton.addEventListener("click", saveDesignFile);
+    loadDesignButton.addEventListener("click", () => loadDesignInput.click());
+    loadDesignInput.addEventListener("change", (event) => {
+      loadDesignFile(event.target.files?.[0]).catch((error) => console.error(error));
+      loadDesignInput.value = "";
+    });
+    brandFilter.addEventListener("change", (event) => { state.activeFilters.brand = event.target.value; renderTemplates(); });
+    typeFilter.addEventListener("change", (event) => { state.activeFilters.type = event.target.value; renderTemplates(); });
+    outfitSelect.addEventListener("change", (event) => { loadOutfit(event.target.value).catch((error) => { console.error(error); hideLoading(); }); });
     colorModalBackdrop.addEventListener("click", (event) => { if (event.target === colorModalBackdrop) closeColorModal(); });
     document.querySelector(".color-modal").addEventListener("click", (event) => event.stopPropagation());
     colorModalClose.addEventListener("click", closeColorModal);
@@ -1749,7 +2290,7 @@
     window.addEventListener("resize", () => { if (!camera || !renderer) return; camera.aspect = viewer.clientWidth / viewer.clientHeight; camera.updateProjectionMatrix(); renderer.setSize(viewer.clientWidth, viewer.clientHeight); });
     function animate() { requestAnimationFrame(animate); if (state.autoRotate && state.model) state.model.rotation.y += 0.006; controls.update(); renderer.render(scene, camera); }
     async function init() { initViewer(); setStatus("Loading manifest..."); await loadManifest(); const firstConfig = outfitSelect.value; await loadOutfit(firstConfig); animate(); }
-    init().catch((error) => { console.error(error); setStatus(`Startup failed.<br>${error.message}`); });
+    init().catch((error) => { console.error(error); hideLoading(); });
   </script>
 </body>
 </html>
