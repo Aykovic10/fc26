@@ -254,43 +254,220 @@
       display: none;
     }
 
-    .loading-overlay {
-      position: absolute;
+    .loading-overlay { display: none !important; }
+
+
+    .template-browser-backdrop {
+      position: fixed;
       inset: 0;
-      z-index: 18;
+      z-index: 95;
       display: none;
-      align-items: center;
-      justify-content: center;
-      background: rgba(244,244,244,.72);
-      backdrop-filter: blur(5px);
-      color: #111;
-      font-weight: 900;
+      background: rgba(255,255,255,.98);
+      color: #1c1c1c;
+      padding: 18px;
+      overflow: auto;
     }
 
-    .loading-overlay.open {
+    .template-browser-backdrop.open { display: block; }
+
+    .template-browser-head {
       display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 22px;
     }
 
-    .loader-card {
+    .template-browser-title {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 14px 18px;
-      border-radius: 18px;
-      background: rgba(255,255,255,.92);
-      box-shadow: 0 16px 50px rgba(0,0,0,.12);
+      gap: 14px;
+      min-width: 0;
     }
 
-    .spinner {
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      border: 3px solid rgba(0,0,0,.12);
-      border-top-color: var(--green);
-      animation: spin .8s linear infinite;
+    .template-browser-title img {
+      width: 72px;
+      height: 72px;
+      border-radius: 12px;
+      object-fit: cover;
+      background: #eee;
     }
 
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .template-browser-title strong {
+      display: block;
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+
+    .template-browser-title span {
+      display: inline-block;
+      font-size: 16px;
+      border-bottom: 3px solid var(--green);
+      padding-bottom: 4px;
+    }
+
+    .template-browser-close {
+      width: 42px;
+      height: 42px;
+      min-height: 42px;
+      border-radius: 12px;
+      background: transparent;
+      color: #222;
+      font-size: 36px;
+      line-height: 1;
+    }
+
+    .template-browser-toolbar {
+      display: grid;
+      grid-template-columns: minmax(180px, 280px) minmax(160px, 220px) minmax(160px, 220px) 1fr;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .template-browser-toolbar input,
+    .template-browser-toolbar select {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid rgba(0,0,0,.18);
+      border-radius: 4px;
+      background: #fff;
+      color: #222;
+      font-size: 16px;
+      padding: 0 8px;
+    }
+
+    .template-sort-tabs {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      flex-wrap: wrap;
+      font-size: 17px;
+      color: #2b2b2b;
+    }
+
+    .template-sort-tab {
+      cursor: pointer;
+      padding-bottom: 7px;
+      border-bottom: 3px solid transparent;
+      user-select: none;
+    }
+
+    .template-sort-tab.active { border-bottom-color: var(--green); }
+
+    .template-browser-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(180px, 1fr));
+      gap: 26px;
+      padding-bottom: 30px;
+    }
+
+    .browser-card {
+      border: 1px solid rgba(0,0,0,.18);
+      background: #efefef;
+      min-height: 330px;
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+      overflow: hidden;
+      text-align: left;
+      padding: 0;
+      color: #222;
+      border-radius: 0;
+      transition: .15s ease;
+    }
+
+    .browser-card:hover,
+    .browser-card.active {
+      border-color: var(--green);
+      box-shadow: inset 0 0 0 3px var(--green);
+    }
+
+    .browser-card-preview {
+      flex: 1;
+      min-height: 260px;
+      display: grid;
+      place-items: center;
+      background: #ededed;
+      overflow: hidden;
+    }
+
+    .browser-card-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .browser-card-preview span {
+      font-size: 76px;
+      opacity: .28;
+    }
+
+    .browser-card-meta {
+      padding: 10px 12px 12px;
+      background: rgba(255,255,255,.88);
+      border-top: 1px solid rgba(0,0,0,.10);
+    }
+
+    .browser-card-meta strong {
+      display: block;
+      font-size: 14px;
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .browser-card-meta span {
+      display: block;
+      margin-top: 4px;
+      font-size: 12px;
+      color: rgba(0,0,0,.55);
+    }
+
+    .template-empty {
+      grid-column: 1 / -1;
+      padding: 60px 20px;
+      text-align: center;
+      color: rgba(0,0,0,.55);
+      font-size: 18px;
+    }
+
+    .selected-template-card {
+      margin-top: 10px;
+      border: 1px solid var(--line-soft);
+      border-radius: 14px;
+      background: rgba(255,255,255,.035);
+      padding: 10px;
+      display: grid;
+      grid-template-columns: 54px 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .browse-template-button {
+      margin-top: 10px;
+      width: 100%;
+      background: rgba(255,255,255,.10);
+      color: #fff;
+    }
+
+    .browse-template-button:hover {
+      background: rgba(0,230,106,.18);
+      color: var(--green);
+    }
+
+    @media (max-width: 1100px) {
+      .template-browser-toolbar { grid-template-columns: 1fr 1fr; }
+      .template-sort-tabs { grid-column: 1 / -1; }
+      .template-browser-grid { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
+    }
+
+    @media (max-width: 640px) {
+      .template-browser-toolbar { grid-template-columns: 1fr; }
+      .template-browser-grid { grid-template-columns: 1fr; }
+    }
 
     .preview-backdrop {
       position: fixed;
@@ -973,22 +1150,13 @@
           <summary>Template</summary>
           <div class="panel-inner">
             <p class="muted">Choose a clothing template. The viewer stays fixed while this sidebar scrolls.</p>
-            <div class="filter-grid">
-              <div class="field">
-                <label for="brandFilter">Brand</label>
-                <select id="brandFilter"></select>
-              </div>
-              <div class="field">
-                <label for="typeFilter">Type</label>
-                <select id="typeFilter"></select>
-              </div>
-            </div>
             <div class="field">
-              <label for="outfitSelect">Template</label>
+              <label for="outfitSelect">Selected Template</label>
               <select id="outfitSelect" class="hidden-select"></select>
-              <div id="templateCards" class="template-grid"></div>
+              <div id="selectedTemplateCard" class="selected-template-card"></div>
+              <button id="browseTemplatesButton" class="browse-template-button" type="button">Browse Templates</button>
             </div>
-            <p id="templateInfo" class="small-note">Loading templates...</p>
+            <p id="templateInfo" class="small-note">Choose a template, edit colors and logos, then download your ZIP.</p>
           </div>
         </details>
 
@@ -1055,6 +1223,32 @@
 
     <div class="bottom-bar">
       <button id="downloadButtonMobile" class="main-button" style="width:100%;">Download ZIP</button>
+    </div>
+
+    <div id="templateBrowserBackdrop" class="template-browser-backdrop">
+      <div class="template-browser-head">
+        <div class="template-browser-title">
+          <img src="https://cdn.buymeacoffee.com/uploads/profile_pictures/2024/05/e31c55d0bc66ff537c0e507db85699ff.png@300w_0e.webp" alt="FC26">
+          <div>
+            <strong>Access all outfit templates</strong>
+            <span>Choose Template</span>
+          </div>
+        </div>
+        <button id="templateBrowserClose" class="template-browser-close" type="button">×</button>
+      </div>
+      <div class="template-browser-toolbar">
+        <input id="templateSearchInput" type="text" placeholder="Filter" />
+        <select id="typeFilter"></select>
+        <select id="brandFilter"></select>
+        <div class="template-sort-tabs">
+          <span class="template-sort-tab active" data-sort="popular">Popular</span>
+          <span class="template-sort-tab" data-sort="latest">Latest</span>
+          <span class="template-sort-tab" data-sort="name">Name</span>
+          <span class="template-sort-tab" data-sort="newest">Newest</span>
+          <span class="template-sort-tab" data-sort="oldest">Oldest</span>
+        </div>
+      </div>
+      <div id="templateCards" class="template-browser-grid"></div>
     </div>
 
     <div id="texturePreviewBackdrop" class="preview-backdrop">
@@ -1136,7 +1330,7 @@
     const state = {
       manifest: null,
       enrichedOutfits: [],
-      activeFilters: { brand: "all", type: "all" },
+      activeFilters: { brand: "all", type: "all", search: "", sort: "popular" },
       config: null,
       currentConfigUrl: null,
       autoRotate: false,
@@ -1159,9 +1353,15 @@
     const status = document.getElementById("status");
     const outfitTitle = document.getElementById("outfitTitle");
     const outfitSelect = document.getElementById("outfitSelect");
+    const selectedTemplateCard = document.getElementById("selectedTemplateCard");
+    const browseTemplatesButton = document.getElementById("browseTemplatesButton");
+    const templateBrowserBackdrop = document.getElementById("templateBrowserBackdrop");
+    const templateBrowserClose = document.getElementById("templateBrowserClose");
+    const templateSearchInput = document.getElementById("templateSearchInput");
     const brandFilter = document.getElementById("brandFilter");
     const typeFilter = document.getElementById("typeFilter");
     const templateCards = document.getElementById("templateCards");
+    const templateSortTabs = document.querySelectorAll(".template-sort-tab");
     const templateInfo = document.getElementById("templateInfo");
     const colorControls = document.getElementById("colorControls");
     const logoControls = document.getElementById("logoControls");
@@ -1198,14 +1398,9 @@
 
     function setStatus(text) { console.log(String(text || "").replace(/<br>/g, " ")); }
 
-    function showLoading(message = "Loading outfit...") {
-      if (loadingText) loadingText.textContent = message;
-      if (loadingOverlay) loadingOverlay.classList.add("open");
-    }
+    function showLoading(message = "Loading outfit...") { /* loading overlay disabled */ }
 
-    function hideLoading() {
-      if (loadingOverlay) loadingOverlay.classList.remove("open");
-    }
+    function hideLoading() { /* loading overlay disabled */ }
     function hexToRgb(hex) { const clean = String(hex || "#000000").replace("#", ""); return { r: parseInt(clean.slice(0, 2), 16), g: parseInt(clean.slice(2, 4), 16), b: parseInt(clean.slice(4, 6), 16) }; }
     function isValidHex(hex) { return typeof hex === "string" && /^#[0-9A-Fa-f]{6}$/.test(hex); }
     function normalizeHex(value, fallback = "#111111") { return isValidHex(value) ? value : fallback; }
@@ -1937,7 +2132,7 @@
       selectElement.innerHTML = "";
       const allOption = document.createElement("option");
       allOption.value = "all";
-      allOption.textContent = "All";
+      allOption.textContent = selectElement === brandFilter ? "All brands" : "All types";
       selectElement.appendChild(allOption);
 
       values.forEach((value) => {
@@ -1959,11 +2154,24 @@
     }
 
     function getFilteredTemplates() {
-      return state.enrichedOutfits.filter((item) => {
+      const query = String(state.activeFilters.search || "").trim().toLowerCase();
+      const filtered = state.enrichedOutfits.filter((item) => {
         const brandOk = state.activeFilters.brand === "all" || item.brand === state.activeFilters.brand;
         const typeOk = state.activeFilters.type === "all" || getCategoryName(item.type) === state.activeFilters.type;
-        return brandOk && typeOk;
+        const text = `${item.name || ""} ${item.brand || ""} ${getCategoryName(item.type)}`.toLowerCase();
+        const searchOk = !query || text.includes(query);
+        return brandOk && typeOk && searchOk;
       });
+
+      const sort = state.activeFilters.sort || "popular";
+      filtered.sort((a, b) => {
+        if (sort === "name") return String(a.name || "").localeCompare(String(b.name || ""));
+        if (sort === "oldest") return String(a.id || a.name || "").localeCompare(String(b.id || b.name || ""));
+        if (sort === "newest" || sort === "latest") return String(b.id || b.name || "").localeCompare(String(a.id || a.name || ""));
+        return 0;
+      });
+
+      return filtered;
     }
 
     function populateOutfitSelect(items) {
@@ -1990,23 +2198,29 @@
         outfitSelect.appendChild(optgroup);
       });
 
+      if (!items.length) {
+        templateCards.innerHTML = `<div class="template-empty">No templates found.</div>`;
+        return;
+      }
+
       items.forEach((item) => {
         const card = document.createElement("button");
         card.type = "button";
-        card.className = "template-card";
+        card.className = "browser-card";
         card.dataset.config = item.config;
         card.innerHTML = `
-          <div class="template-thumb">${item.preview ? `<img src="${item.preview}" alt="">` : "👕"}</div>
-          <div class="template-meta">
+          <div class="browser-card-preview">${item.preview ? `<img src="${item.preview}" alt="">` : "<span>👕</span>"}</div>
+          <div class="browser-card-meta">
             <strong>${item.name || item.id}</strong>
             <span>${item.brand || "Other"} · ${getCategoryName(item.type)}</span>
           </div>
         `;
         card.addEventListener("click", () => {
           outfitSelect.value = item.config;
+          templateBrowserBackdrop.classList.remove("open");
           loadOutfit(item.config).catch((error) => {
             console.error(error);
-            console.warn(`Could not load outfit: ${error.message}`);
+            hideLoading();
           });
         });
         templateCards.appendChild(card);
@@ -2025,9 +2239,20 @@
     }
 
     function markActiveTemplateCard(configUrl) {
-      document.querySelectorAll(".template-card").forEach((card) => {
+      document.querySelectorAll(".browser-card").forEach((card) => {
         card.classList.toggle("active", card.dataset.config === configUrl);
       });
+
+      const item = state.enrichedOutfits.find((outfit) => outfit.config === configUrl);
+      if (item && selectedTemplateCard) {
+        selectedTemplateCard.innerHTML = `
+          <div class="template-thumb">${item.preview ? `<img src="${item.preview}" alt="">` : "👕"}</div>
+          <div class="template-meta">
+            <strong>${item.name || item.id}</strong>
+            <span>${item.brand || "Other"} · ${getCategoryName(item.type)}</span>
+          </div>
+        `;
+      }
     }
 
     async function loadManifest() {
@@ -2080,6 +2305,8 @@
       state.model = await loadModel(modelPath);
       scene.add(state.model);
       updateGeneratedTexture();
+      setView("front");
+      markActiveTemplateCard(configUrl);
     }
 
     function resetColorsToDefaults() {
@@ -2275,8 +2502,19 @@
       loadDesignFile(event.target.files?.[0]).catch((error) => console.error(error));
       loadDesignInput.value = "";
     });
+    browseTemplatesButton.addEventListener("click", () => templateBrowserBackdrop.classList.add("open"));
+    templateBrowserClose.addEventListener("click", () => templateBrowserBackdrop.classList.remove("open"));
+    templateBrowserBackdrop.addEventListener("click", (event) => { if (event.target === templateBrowserBackdrop) templateBrowserBackdrop.classList.remove("open"); });
     brandFilter.addEventListener("change", (event) => { state.activeFilters.brand = event.target.value; renderTemplates(); });
     typeFilter.addEventListener("change", (event) => { state.activeFilters.type = event.target.value; renderTemplates(); });
+    templateSearchInput.addEventListener("input", (event) => { state.activeFilters.search = event.target.value; renderTemplates(); });
+    templateSortTabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        state.activeFilters.sort = tab.dataset.sort || "popular";
+        templateSortTabs.forEach((item) => item.classList.toggle("active", item === tab));
+        renderTemplates();
+      });
+    });
     outfitSelect.addEventListener("change", (event) => { loadOutfit(event.target.value).catch((error) => { console.error(error); hideLoading(); }); });
     colorModalBackdrop.addEventListener("click", (event) => { if (event.target === colorModalBackdrop) closeColorModal(); });
     document.querySelector(".color-modal").addEventListener("click", (event) => event.stopPropagation());
