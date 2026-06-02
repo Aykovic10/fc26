@@ -9,6 +9,11 @@
       "id": "adidas-tiro-26-drill-top",
       "name": "adidas Tiro26 Drill Top",
       "config": "./outfits/adidas-tiro-26-drill-top/config.json"
+    },
+    {
+      "id": "adidas-tiro-26-drill-pants",
+      "name": "adidas Tiro26 Drill Pants",
+      "config": "./outfits/adidas-tiro-26-drill-pants/config.json"
     }
   ]
 }
